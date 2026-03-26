@@ -1,0 +1,5 @@
+{
+  "id": "ui-generate",
+  "type": "builtin",
+  "entry": "prompt.md"
+}

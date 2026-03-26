@@ -1,0 +1,15 @@
+{
+  "name": "figame-make-agent",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter @figame/web dev",
+    "build": "pnpm --filter @figame/web build",
+    "start": "pnpm --filter @figame/web start",
+    "lint": "pnpm --filter @figame/web lint",
+    "typecheck": "pnpm --filter @figame/web typecheck"
+  },
+  "devDependencies": {
+    "next": "16.2.1"
+  }
+}
