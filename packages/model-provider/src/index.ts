@@ -16,6 +16,7 @@ export * from "./utils/assert-capability";
 export * from "./factory/get-chat-model";
 export * from "./factory/get-main-model";
 export * from "./factory/get-structured-model";
+export * from "./factory/get-model-by-profile";
 
 export * from "./cache/cache-key";
 export * from "./cache/chat-model-cache";
