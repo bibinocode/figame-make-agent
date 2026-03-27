@@ -1,5 +1,15 @@
 {
   "id": "react-ts",
   "label": "React TypeScript",
-  "runtime": "sandpack"
+  "runtime": "sandpack",
+  "extends": ["shared"],
+  "entry": {
+    "main": "/src/App.tsx"
+  },
+  "preview": {
+    "template": "react-ts",
+    "visibleFiles": ["/src/App.tsx", "/src/main.tsx", "/src/styles.css"],
+    "activeFile": "/src/App.tsx",
+    "externalResources": []
+  }
 }

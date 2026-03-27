@@ -1,5 +1,6 @@
 import { DEFAULT_MODEL_CONFIG } from "./defaults";
 import { readModelConfigFromEnv } from "./env";
+import { pickFirstDefined } from "./pick-config-value";
 import { resolveProfile } from "./profiles";
 import { getProjectModelConfig } from "./project-config";
 import type {
@@ -45,31 +46,36 @@ export function resolveModelConfig(
   const profile = resolveProfile(options, mergedConfigForProfile);
 
   // 读取 profile 配置时，按优先级逐层回退
-  const profileConfig: ModelProfileConfig | undefined =
-    externalConfig?.profiles?.[profile] ??
-    projectConfig.profiles?.[profile] ??
-    envConfig.profiles?.[profile] ??
-    DEFAULT_MODEL_CONFIG.profiles[profile];
+  const profileConfig: ModelProfileConfig | undefined = pickFirstDefined(
+    externalConfig?.profiles?.[profile],
+    projectConfig.profiles?.[profile],
+    envConfig.profiles?.[profile],
+    DEFAULT_MODEL_CONFIG.profiles[profile],
+  );
 
   if (!profileConfig) {
     throw new MissingProfileConfigError(profile);
   }
 
   // provider 允许被运行时 options 显式覆盖
-  const provider: ProviderId = options?.provider ?? profileConfig.provider;
+  const provider: ProviderId = pickFirstDefined(
+    options?.provider,
+    profileConfig.provider,
+  ) as ProviderId;
 
   // provider 配置同样按优先级逐层回退
-  const providerConfig =
-    externalConfig?.providers?.[provider] ??
-    projectConfig.providers?.[provider] ??
-    envConfig.providers?.[provider] ??
-    DEFAULT_MODEL_CONFIG.providers[provider];
+  const providerConfig = pickFirstDefined(
+    externalConfig?.providers?.[provider],
+    projectConfig.providers?.[provider],
+    envConfig.providers?.[provider],
+    DEFAULT_MODEL_CONFIG.providers[provider],
+  );
 
   if (!providerConfig) {
     throw new MissingProviderConfigError(provider);
   }
 
-  const apiKey = options?.apiKey ?? providerConfig.apiKey;
+  const apiKey = pickFirstDefined(options?.apiKey, providerConfig.apiKey);
   if (!apiKey) {
     throw new MissingApiKeyError(provider);
   }
@@ -77,11 +83,15 @@ export function resolveModelConfig(
   return {
     profile,
     provider,
-    model: options?.model ?? profileConfig.model,
+    model: pickFirstDefined(options?.model, profileConfig.model) as string,
     apiKey,
-    baseURL:
-      options?.baseURL ?? profileConfig.baseURL ?? providerConfig.baseURL,
-    temperature: options?.temperature ?? profileConfig.temperature ?? 0,
-    maxTokens: options?.maxTokens ?? profileConfig.maxTokens,
+    baseURL: pickFirstDefined(
+      options?.baseURL,
+      profileConfig.baseURL,
+      providerConfig.baseURL,
+    ),
+    temperature:
+      pickFirstDefined(options?.temperature, profileConfig.temperature) ?? 0,
+    maxTokens: pickFirstDefined(options?.maxTokens, profileConfig.maxTokens),
   };
 }

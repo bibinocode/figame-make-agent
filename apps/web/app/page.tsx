@@ -1,6 +1,13 @@
-export default function Home() {
+import { ProjectPreviewWorkbench } from "@/features/project-preview/components/project-preview-workbench";
+import { getDemoSandpackTemplate } from "@/features/project-preview/services/get-demo-sandpack-template";
+
+export default async function Home() {
+  const sandpackTemplate = await getDemoSandpackTemplate();
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-    </div>
+    <ProjectPreviewWorkbench
+      sandpackTemplate={sandpackTemplate}
+      templateLabel="React TypeScript"
+    />
   );
 }

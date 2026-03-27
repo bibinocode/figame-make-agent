@@ -22,3 +22,4 @@ export * from "./cache/cache-key";
 export * from "./cache/chat-model-cache";
 
 export * from "./config/project-config";
+export * from "./config/pick-config-value";

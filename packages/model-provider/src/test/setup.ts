@@ -1,4 +1,4 @@
-import { beforeEach } from "vitest";
+import { beforeEach, vi } from "vitest";
 import { clearChatModelCache } from "../cache/chat-model-cache";
 import { clearProviderRegistry } from "../registry/provider-registry";
 
@@ -24,6 +24,7 @@ const MODEL_ENV_KEYS = [
  * 不清理的话，测试之间会互相污染，结果会不稳定。
  */
 beforeEach(() => {
+  vi.restoreAllMocks();
   clearProviderRegistry();
   clearChatModelCache();
 

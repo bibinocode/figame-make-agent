@@ -109,4 +109,80 @@ describe("getStructuredModel", () => {
       includeRaw: false,
     });
   });
+
+  // 这条测试验证“structured 层不会把不同 schema 的包装结果缓存成同一个对象”。
+  // 当前设计里，缓存的是底层 chat model，而不是结构化包装后的结果。
+  // 这样不同 schema 才不会互相污染，但底层模型实例仍然可以复用。
+  it("应该复用底层 chat model，但不复用不同 schema 的 structured 包装结果", () => {
+    const structuredModelA = { kind: "structured-model-a" };
+    const structuredModelB = { kind: "structured-model-b" };
+
+    const withStructuredOutput = vi
+      .fn()
+      .mockReturnValueOnce(structuredModelA)
+      .mockReturnValueOnce(structuredModelB);
+
+    const fakeChatModel = {
+      withStructuredOutput,
+    } as any;
+
+    const chatCreator = vi.fn(() => fakeChatModel);
+
+    const descriptor: ProviderDescriptor = {
+      id: "openai",
+      capabilities: {
+        chat: chatCreator,
+      },
+      defaults: {
+        structuredMethod: "functionCalling",
+      },
+    };
+
+    registerProviderDescriptor(descriptor);
+
+    const externalConfig = {
+      defaultProfile: "main" as const,
+      profiles: {
+        main: {
+          provider: "openai" as const,
+          model: "gpt-4o-mini",
+          temperature: 0,
+        },
+      },
+      providers: {
+        openai: {
+          apiKey: "test-openai-key",
+        },
+      },
+    };
+
+    const schemaA = z.object({
+      title: z.string(),
+    });
+
+    const schemaB = z.object({
+      answer: z.string(),
+    });
+
+    const resultA = getStructuredModel(schemaA, externalConfig, {
+      profile: "main",
+    });
+
+    const resultB = getStructuredModel(schemaB, externalConfig, {
+      profile: "main",
+    });
+
+    expect(resultA).toBe(structuredModelA);
+    expect(resultB).toBe(structuredModelB);
+    expect(chatCreator).toHaveBeenCalledTimes(1);
+    expect(withStructuredOutput).toHaveBeenCalledTimes(2);
+    expect(withStructuredOutput).toHaveBeenNthCalledWith(1, schemaA, {
+      method: "functionCalling",
+      includeRaw: false,
+    });
+    expect(withStructuredOutput).toHaveBeenNthCalledWith(2, schemaB, {
+      method: "functionCalling",
+      includeRaw: false,
+    });
+  });
 });

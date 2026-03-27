@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  transpilePackages: ["@figame/template-system", "@figame/sandpack-runtime"],
 };
 
 export default nextConfig;

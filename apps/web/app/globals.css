@@ -22,5 +22,32 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+button {
+  cursor: pointer;
+}
+
+.project-preview-sandpack .sp-wrapper {
+  height: 100%;
+  border: 0 !important;
+}
+
+.project-preview-sandpack .sp-layout {
+  height: 100%;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.project-preview-sandpack .sp-stack {
+  height: 100%;
+}
+
+.project-preview-sandpack .sp-editor {
+  border: 0 !important;
+}
+
+.project-preview-sandpack .sp-preview-container {
+  border: 0 !important;
 }
