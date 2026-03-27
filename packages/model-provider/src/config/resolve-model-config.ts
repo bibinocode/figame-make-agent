@@ -1,7 +1,13 @@
 import { DEFAULT_MODEL_CONFIG } from "./defaults";
 import { readModelConfigFromEnv } from "./env";
 import { resolveProfile } from "./profiles";
-import type { GetModelOptions, ModelConfig } from "../types/config";
+import { getProjectModelConfig } from "./project-config";
+import type {
+  GetModelOptions,
+  ModelConfig,
+  ModelProfileConfig,
+} from "../types/config";
+import type { ProviderId } from "../types/provider";
 import type { ResolvedChatModelOptions } from "../types/runtime";
 import {
   MissingApiKeyError,
@@ -9,22 +15,39 @@ import {
   MissingProviderConfigError,
 } from "../types/errors";
 
+/**
+ * 解析最终模型配置
+ *
+ * 合并优先级：
+ * 1. 包内默认值
+ * 2. 环境变量
+ * 3. 项目级配置文件
+ * 4. 调用方传入 externalConfig
+ * 5. 调用方传入 options
+ *
+ * 目标是返回一份“可以直接创建模型实例”的最终配置。
+ */
 export function resolveModelConfig(
   externalConfig?: Partial<ModelConfig>,
   options?: GetModelOptions,
 ): ResolvedChatModelOptions {
   const envConfig = readModelConfigFromEnv();
+  const projectConfig = getProjectModelConfig();
 
-  // 1. 先确定当前要使用哪个 profile，例如 main / structured
-  const profile = resolveProfile(options, {
+  // profile 选择时，也要按完整优先级链路来判断
+  const mergedConfigForProfile: Partial<ModelConfig> = {
     ...DEFAULT_MODEL_CONFIG,
     ...envConfig,
+    ...projectConfig,
     ...externalConfig,
-  });
+  };
 
-  // 2. 再从 多层配置 里拿到这个 profile 对应的模型配置
-  const profileConfig =
+  const profile = resolveProfile(options, mergedConfigForProfile);
+
+  // 读取 profile 配置时，按优先级逐层回退
+  const profileConfig: ModelProfileConfig | undefined =
     externalConfig?.profiles?.[profile] ??
+    projectConfig.profiles?.[profile] ??
     envConfig.profiles?.[profile] ??
     DEFAULT_MODEL_CONFIG.profiles[profile];
 
@@ -32,11 +55,13 @@ export function resolveModelConfig(
     throw new MissingProfileConfigError(profile);
   }
 
-  // 3. 如果调用方传了 provider，就以调用方为准；否则使用 profile 默认 provider
-  const provider = options?.provider ?? profileConfig.provider;
+  // provider 允许被运行时 options 显式覆盖
+  const provider: ProviderId = options?.provider ?? profileConfig.provider;
 
+  // provider 配置同样按优先级逐层回退
   const providerConfig =
     externalConfig?.providers?.[provider] ??
+    projectConfig.providers?.[provider] ??
     envConfig.providers?.[provider] ??
     DEFAULT_MODEL_CONFIG.providers[provider];
 

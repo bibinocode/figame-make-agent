@@ -20,3 +20,5 @@ export * from "./factory/get-model-by-profile";
 
 export * from "./cache/cache-key";
 export * from "./cache/chat-model-cache";
+
+export * from "./config/project-config";

@@ -5,6 +5,13 @@ export class UnsupportedProviderError extends Error {
   }
 }
 
+export class DuplicateProviderRegistrationError extends Error {
+  constructor(provider: string) {
+    super(`Provider "${provider}" is already registered`);
+    this.name = "DuplicateProviderRegistrationError";
+  }
+}
+
 export class UnsupportedCapabilityError extends Error {
   constructor(provider: string, capability: string) {
     super(`Provider "${provider}" does not support capability "${capability}"`);

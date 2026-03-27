@@ -1,6 +1,9 @@
 import type { ProviderDescriptor } from "../types/model";
 import type { ProviderId } from "../types/provider";
-import { UnsupportedProviderError } from "../types/errors";
+import {
+  DuplicateProviderRegistrationError,
+  UnsupportedProviderError,
+} from "../types/errors";
 
 // 用 Map 做注册表，后面查找 provider 会比较直接。
 const providerRegistry = new Map<ProviderId, ProviderDescriptor>();
@@ -11,6 +14,12 @@ const providerRegistry = new Map<ProviderId, ProviderDescriptor>();
 export function registerProviderDescriptor(
   descriptor: ProviderDescriptor,
 ): void {
+  // 同名 provider 只允许注册一次。
+  // 这样可以避免初始化顺序变化时，后注册的实现静默覆盖前一个实现。
+  if (providerRegistry.has(descriptor.id)) {
+    throw new DuplicateProviderRegistrationError(descriptor.id);
+  }
+
   providerRegistry.set(descriptor.id, descriptor);
 }
 

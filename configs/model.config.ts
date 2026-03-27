@@ -1,4 +1,4 @@
-import type { ModelConfig } from "@figame/model-provider";
+import type { ModelConfig } from "../packages/model-provider/src/types/config";
 
 /**
  * 项目级模型配置
