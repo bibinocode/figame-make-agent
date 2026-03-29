@@ -3,7 +3,7 @@ import { z } from "zod";
 export const templateManifestSchema = z.object({
   id: z.string().min(1),
   label: z.string().min(1),
-  runtime: z.literal("sandpack"),
+  runtime: z.enum(["sandpack", "webcontainer"]),
   extends: z.array(z.string().min(1)).default([]),
   entry: z
     .object({

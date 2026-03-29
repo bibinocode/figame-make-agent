@@ -1,46 +1,46 @@
 export function ChatSidebarPlaceholder() {
   return (
-    <aside className="flex min-h-[640px] w-full max-w-[380px] flex-col rounded-[28px] border border-black/8 bg-[#101828] px-5 py-5 text-white shadow-[0_24px_80px_rgba(15,23,42,0.28)]">
-      <header className="border-b border-white/10 pb-4">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-amber-300">
+    <aside className="hidden w-[360px] shrink-0 border-l border-slate-200 bg-[#fbfaf6] xl:flex xl:flex-col">
+      <header className="border-b border-slate-200 px-4 py-4">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-500">
           Agent Chat
         </p>
-        <h2 className="mt-2 text-xl font-semibold">对话工作区</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-300">
-          这里后面会接入真实智能体。当前先保留完整版位，确保首页主布局稳定。
+        <h2 className="mt-2 text-base font-semibold text-slate-950">
+          智能体对话区
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          这里先保留后续智能体入口。当前阶段优先把编辑器、运行时和预览链路打通。
         </p>
       </header>
 
-      <div className="flex flex-1 flex-col gap-4 py-5">
+      <div className="flex flex-1 flex-col gap-3 overflow-auto px-4 py-4">
         <MessageBubble
           role="assistant"
           title="系统"
-          content="模板已经加载完成。接下来可以根据你的指令修改页面、组件或业务逻辑。"
+          content="WebContainer 运行时会在浏览器里安装依赖、启动 dev server，并把输出同步到终端。"
         />
         <MessageBubble
           role="user"
           title="你"
-          content="先把左侧工作区挂起来，右侧保留聊天结构，后面再接真实对话。"
+          content="接下来把这里升级成真正的智能体面板，支持 MCP、Skill 和代码操作。"
         />
         <MessageBubble
           role="assistant"
           title="助手"
-          content="好的，当前先提供稳定布局和 Sandpack 预览入口。"
+          content="明白。当前先把代码模式和纯预览模式做扎实，后面再接入真实会话。"
         />
       </div>
 
-      <div className="mt-auto rounded-[22px] border border-white/10 bg-white/5 p-3">
-        <div className="min-h-[92px] rounded-[16px] border border-dashed border-white/10 bg-black/10 px-4 py-3 text-sm text-slate-400">
-          在这里输入你的需求，例如：帮我把首页改成游戏启动页。
+      <div className="border-t border-slate-200 px-4 py-4">
+        <div className="rounded-md border border-slate-300 bg-white px-3 py-3 text-sm leading-6 text-slate-400">
+          在这里输入你的需求，例如：把首页改成一个游戏化的工作台。
         </div>
-        <div className="mt-3 flex items-center justify-between">
-          <span className="text-xs uppercase tracking-[0.2em] text-slate-500">
-            Coming Soon
-          </span>
+        <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
+          <span>Mock Session</span>
           <button
             type="button"
             disabled
-            className="rounded-full bg-amber-300 px-4 py-2 text-sm font-semibold text-slate-950 opacity-80"
+            className="h-9 rounded-md border border-slate-950 bg-slate-950 px-4 text-sm font-medium text-white opacity-85"
           >
             发送
           </button>
@@ -60,16 +60,16 @@ function MessageBubble({ role, title, content }: MessageBubbleProps) {
   return (
     <article
       className={[
-        "rounded-[22px] px-4 py-4",
+        "max-w-[92%] border px-3 py-3 text-sm leading-6",
         role === "assistant"
-          ? "bg-white/8 text-slate-100"
-          : "self-end bg-amber-300 text-slate-950",
+          ? "border-slate-200 bg-white text-slate-700"
+          : "self-end border-emerald-300 bg-emerald-50 text-slate-900",
       ].join(" ")}
     >
-      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] opacity-70">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
         {title}
       </p>
-      <p className="mt-2 text-sm leading-6">{content}</p>
+      <p className="mt-2">{content}</p>
     </article>
   );
 }

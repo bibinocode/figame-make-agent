@@ -1,4 +1,4 @@
-export type TemplateRuntime = "sandpack";
+export type TemplateRuntime = "sandpack" | "webcontainer";
 
 export type TemplateManifestEntry = {
   main?: string;

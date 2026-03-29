@@ -1,12 +1,12 @@
 import { ProjectPreviewWorkbench } from "@/features/project-preview/components/project-preview-workbench";
-import { getDemoSandpackTemplate } from "@/features/project-preview/services/get-demo-sandpack-template";
+import { getDemoTemplate } from "@/features/project-preview/services/get-demo-template";
 
 export default async function Home() {
-  const sandpackTemplate = await getDemoSandpackTemplate();
+  const template = await getDemoTemplate();
 
   return (
     <ProjectPreviewWorkbench
-      sandpackTemplate={sandpackTemplate}
+      template={template}
       templateLabel="React TypeScript"
     />
   );

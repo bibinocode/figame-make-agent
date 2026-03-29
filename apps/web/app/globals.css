@@ -1,8 +1,9 @@
 @import "tailwindcss";
+@import "@xterm/xterm/css/xterm.css";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f4f1e8;
+  --foreground: #111827;
 }
 
 @theme inline {
@@ -10,13 +11,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
@@ -29,25 +23,6 @@ button {
   cursor: pointer;
 }
 
-.project-preview-sandpack .sp-wrapper {
-  height: 100%;
-  border: 0 !important;
-}
-
-.project-preview-sandpack .sp-layout {
-  height: 100%;
-  border: 0 !important;
-  background: transparent !important;
-}
-
-.project-preview-sandpack .sp-stack {
-  height: 100%;
-}
-
-.project-preview-sandpack .sp-editor {
-  border: 0 !important;
-}
-
-.project-preview-sandpack .sp-preview-container {
-  border: 0 !important;
+iframe {
+  border: 0;
 }

@@ -1,25 +1,28 @@
-import type { SandpackTemplateResult } from "@figame/sandpack-runtime";
+import type { AssembledTemplate } from "@figame/template-system";
 import { ChatSidebarPlaceholder } from "./chat-sidebar-placeholder";
 import { ProjectPreviewWorkspace } from "./project-preview-workspace";
+import { WorkbenchTopbar } from "./workbench-topbar";
 
 type ProjectPreviewWorkbenchProps = {
-  sandpackTemplate: SandpackTemplateResult;
+  template: AssembledTemplate;
   templateLabel: string;
 };
 
 export function ProjectPreviewWorkbench({
-  sandpackTemplate,
+  template,
   templateLabel,
 }: ProjectPreviewWorkbenchProps) {
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(245,158,11,0.24),_transparent_30%),linear-gradient(180deg,_#f7f5ef_0%,_#ece6d7_100%)] px-4 py-6 text-slate-950 md:px-6 xl:px-8">
-      <div className="mx-auto flex w-full max-w-[1680px] flex-col gap-6 lg:flex-row">
+    <div className="min-h-screen bg-[#f4f1e8] text-slate-950">
+      <WorkbenchTopbar projectTitle="智能体项目工作台" />
+
+      <main className="flex min-h-[calc(100vh-56px)]">
         <ProjectPreviewWorkspace
+          template={template}
           templateLabel={templateLabel}
-          sandpackTemplate={sandpackTemplate}
         />
         <ChatSidebarPlaceholder />
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }
