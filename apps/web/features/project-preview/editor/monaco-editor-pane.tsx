@@ -79,9 +79,11 @@ export function MonacoEditorPane({
       options={{
         automaticLayout: true,
         fontFamily:
-          "var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace",
+          "var(--font-jetbrains-mono), 'JetBrains Mono', 'Cascadia Mono', 'SF Mono', Consolas, monospace",
         fontLigatures: true,
         fontSize: 14,
+        fontWeight: "500",
+        lineHeight: 22,
         minimap: { enabled: false },
         padding: { top: 16 },
         quickSuggestions: {

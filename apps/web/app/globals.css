@@ -2,21 +2,51 @@
 @import "@xterm/xterm/css/xterm.css";
 
 :root {
-  --background: #f4f1e8;
-  --foreground: #111827;
+  --background: #edf3fb;
+  --foreground: #0f172a;
+  --workbench-accent: #2563eb;
+  --workbench-accent-soft: #dbeafe;
+  --workbench-accent-strong: #1d4ed8;
+  --workbench-canvas: #edf3fb;
+  --workbench-chrome: #0f172a;
+  --workbench-line: #d7e0ec;
+  --workbench-muted: #5b6b7f;
+  --workbench-panel: #f7fbff;
+  --workbench-panel-muted: #f1f5f9;
+  --workbench-success: #059669;
+  --workbench-surface: #ffffff;
+  --workbench-surface-alt: #f8fafc;
+  --workbench-terminal: #0b1220;
+  --workbench-terminal-border: #1e293b;
+  --workbench-text: #0f172a;
+  --workbench-transition-fast: 160ms;
+  --workbench-transition-normal: 220ms;
+  --workbench-transition-slow: 280ms;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+html {
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 28%),
+    linear-gradient(180deg, #f8fbff 0%, #edf3fb 100%);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-plex-sans), Arial, Helvetica, sans-serif;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
 }
 
 button {
@@ -25,4 +55,8 @@ button {
 
 iframe {
   border: 0;
+}
+
+::selection {
+  background: rgba(37, 99, 235, 0.18);
 }

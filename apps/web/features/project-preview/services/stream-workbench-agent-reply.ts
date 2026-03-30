@@ -45,14 +45,14 @@ export async function streamWorkbenchAgentReply(
     }
 
     accumulated += chunk;
-    options.onChunk(accumulated);
+    options.onChunk(chunk);
   }
 
   const remainder = decoder.decode();
 
   if (remainder) {
     accumulated += remainder;
-    options.onChunk(accumulated);
+    options.onChunk(remainder);
   }
 
   return accumulated;

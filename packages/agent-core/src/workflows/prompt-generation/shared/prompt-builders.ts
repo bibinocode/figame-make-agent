@@ -26,6 +26,28 @@ function buildDependencySection(context: PromptGenerationNodePromptContext) {
   ].join("\n\n");
 }
 
+function buildDesignContextSection(context: PromptGenerationNodePromptContext) {
+  const designContext = context.workflow.designContext;
+
+  if (!designContext) {
+    return "";
+  }
+
+  return [
+    "设计上下文：",
+    `- source: ${designContext.source}`,
+    `- query: ${designContext.query}`,
+    `- styleName: ${designContext.styleName}`,
+    `- styleKeywords: ${designContext.styleKeywords.join("、")}`,
+    `- typography.body: ${designContext.typography.body}`,
+    `- typography.mono: ${designContext.typography.mono}`,
+    `- colors: ${JSON.stringify(designContext.colors)}`,
+    `- motion: ${JSON.stringify(designContext.motion)}`,
+    "设计规则：",
+    ...designContext.rules.map((rule, index) => `${index + 1}. ${rule}`),
+  ].join("\n");
+}
+
 type CreateSystemPromptBuilderOptions = {
   role: string;
   task: string;
@@ -44,6 +66,7 @@ export function createSystemPromptBuilder(
       `当前节点：${context.stepNode.title}`,
       `节点目标：${context.stepNode.goal}`,
       `当前任务：${options.task}`,
+      buildDesignContextSection(context),
       [
         "核心原则：",
         ...options.principles.map((item, index) => `${index + 1}. ${item}`),
@@ -76,6 +99,7 @@ export function createUserPromptBuilder(
       `当前工作流 ID：${context.workflow.workflowMeta.workflowId}`,
       `当前节点输出键：${context.stepNode.outputArtifactKey}`,
       `当前节点目标：${options.objective}`,
+      buildDesignContextSection(context),
       buildDependencySection(context),
       context.retryInstruction ? `修正要求：${context.retryInstruction}` : "",
       options.notes && options.notes.length > 0

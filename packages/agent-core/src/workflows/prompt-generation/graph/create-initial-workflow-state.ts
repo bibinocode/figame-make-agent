@@ -1,4 +1,5 @@
 import {
+  type PromptGenerationDesignContext,
   type PromptGenerationWorkflowState,
   PromptGenerationWorkflowStateSchema,
 } from "./workflow-schema";
@@ -12,7 +13,14 @@ function createWorkflowId() {
   return `prompt-workflow-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function createInitialPromptGenerationWorkflowState(userPrompt: string) {
+type CreateInitialPromptGenerationWorkflowStateOptions = {
+  designContext?: PromptGenerationDesignContext | null;
+};
+
+export function createInitialPromptGenerationWorkflowState(
+  userPrompt: string,
+  options: CreateInitialPromptGenerationWorkflowStateOptions = {},
+) {
   const now = new Date().toISOString();
 
   return PromptGenerationWorkflowStateSchema.parse({
@@ -43,6 +51,7 @@ export function createInitialPromptGenerationWorkflowState(userPrompt: string) {
       completedAt: null,
     })),
     artifacts: {},
+    designContext: options.designContext ?? null,
     summary: {
       completedStepCount: 0,
       totalStepCount: PROMPT_GENERATION_STEP_NODES.length,

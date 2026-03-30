@@ -2,6 +2,7 @@ import { Annotation } from "@langchain/langgraph";
 import type {
   PromptGenerationArtifactEnvelope,
   PromptGenerationArtifactKey,
+  PromptGenerationDesignContext,
   PromptGenerationPhaseState,
   PromptGenerationSummary,
   PromptGenerationWorkflowMeta,
@@ -36,6 +37,13 @@ export const PromptGenerationWorkflowAnnotation = Annotation.Root({
     }),
     default: () => ({}),
   }),
+  designContext: Annotation<
+    PromptGenerationDesignContext | null,
+    PromptGenerationDesignContext | null | undefined
+  >({
+    reducer: (left, right) => right ?? left,
+    default: () => null,
+  }),
   summary: Annotation<PromptGenerationSummary, Partial<PromptGenerationSummary>>({
     reducer: (left, right) => ({
       ...left,
@@ -51,6 +59,7 @@ export type PromptGenerationWorkflowPatch = {
   artifacts?: Partial<
     Record<PromptGenerationArtifactKey, PromptGenerationArtifactEnvelope>
   >;
+  designContext?: PromptGenerationDesignContext | null;
   summary?: Partial<PromptGenerationSummary>;
 };
 
@@ -69,6 +78,10 @@ export function applyPromptGenerationWorkflowUpdate(
       ...current.artifacts,
       ...patch.artifacts,
     },
+    designContext:
+      patch.designContext === undefined
+        ? current.designContext
+        : patch.designContext,
     summary: {
       ...current.summary,
       ...patch.summary,

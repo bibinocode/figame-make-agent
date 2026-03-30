@@ -77,9 +77,9 @@ function getMessageChrome(message: WorkbenchChatMessage) {
 
   switch (message.role) {
     case "user":
-      return "ml-auto max-w-[88%] border border-slate-900 bg-slate-950 text-white";
+      return "ml-auto max-w-[88%] border border-[var(--workbench-chrome)] bg-[var(--workbench-chrome)] text-white";
     case "assistant":
-      return "mr-auto max-w-[92%] border border-slate-200 bg-white text-slate-800";
+      return "mr-auto max-w-[94%] border border-[var(--workbench-line)] bg-[var(--workbench-surface)] text-[var(--workbench-text)]";
     default:
       return "mx-auto max-w-[94%] border border-amber-200 bg-amber-50 text-amber-900";
   }
@@ -90,7 +90,7 @@ function getRoleLabel(message: WorkbenchChatMessage) {
     case "user":
       return "你";
     case "assistant":
-      return message.status === "streaming" ? "助手正在回复" : "助手";
+      return message.status === "streaming" ? "助手回复中" : "Figame";
     default:
       return "系统";
   }
@@ -227,7 +227,9 @@ export function ChatSidebarPlaceholder({
       routingNode: buildRoutingNode(snapshot),
     });
 
-    const hasPromptSource = envelope.sources.some((source) => source.kind === "prompt");
+    const hasPromptSource = envelope.sources.some(
+      (source) => source.kind === "prompt",
+    );
     let routingNodeVisible = true;
 
     if (
@@ -247,7 +249,7 @@ export function ChatSidebarPlaceholder({
           role: "system",
           kind: "workflow",
           html: "",
-          text: "Prompt 生成流程执行中。",
+          text: "应用生成流程执行中。",
           createdAt,
           status: "streaming",
           workflowNode: {
@@ -398,7 +400,7 @@ export function ChatSidebarPlaceholder({
   };
 
   return (
-    <aside className="hidden h-full min-h-0 w-[420px] shrink-0 overflow-hidden border-l border-slate-200 bg-[#f6f4ee] xl:flex xl:flex-col">
+    <aside className="hidden h-full min-h-0 w-[430px] shrink-0 overflow-hidden bg-[var(--workbench-panel-muted)] xl:flex xl:flex-col">
       <div
         className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 py-4"
         onScroll={(event) => {
@@ -423,26 +425,42 @@ export function ChatSidebarPlaceholder({
                 <div className="flex items-center justify-between gap-3 text-[11px]">
                   <span
                     className={
-                      message.role === "user" ? "text-slate-300" : "text-slate-400"
+                      message.role === "user"
+                        ? "font-medium text-slate-300"
+                        : "font-medium text-[var(--workbench-muted)]"
                     }
                   >
                     {getRoleLabel(message)}
                   </span>
-                  <span className="text-slate-400">
+                  <span
+                    className={
+                      message.role === "user"
+                        ? "text-slate-400"
+                        : "text-[var(--workbench-muted)]"
+                    }
+                  >
                     {formatMessageTime(message.createdAt)}
                   </span>
                 </div>
                 {message.status === "streaming" && !message.html ? (
-                  <div className="mt-3 flex items-center gap-2 text-slate-400">
-                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-slate-400 [animation-delay:-0.3s]" />
-                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-slate-400 [animation-delay:-0.15s]" />
-                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-slate-400" />
+                  <div className="mt-3 flex items-center gap-2 text-[var(--workbench-muted)]">
+                    <span className="h-1.5 w-1.5 animate-pulse bg-[var(--workbench-accent)] [animation-delay:-0.3s]" />
+                    <span className="h-1.5 w-1.5 animate-pulse bg-[var(--workbench-accent)] [animation-delay:-0.15s]" />
+                    <span className="h-1.5 w-1.5 animate-pulse bg-[var(--workbench-accent)]" />
+                    <span className="ml-1 text-xs">正在思考</span>
                   </div>
                 ) : (
-                  <div
-                    className="mt-2 text-sm leading-7"
-                    dangerouslySetInnerHTML={{ __html: message.html }}
-                  />
+                  <>
+                    <div
+                      className="mt-2 text-sm leading-7"
+                      dangerouslySetInnerHTML={{ __html: message.html }}
+                    />
+                    {message.status === "streaming" ? (
+                      <div className="mt-3 h-px overflow-hidden bg-[var(--workbench-accent-soft)]">
+                        <div className="h-full w-1/3 animate-[stream-bar_1.1s_ease-in-out_infinite] bg-[var(--workbench-accent)]" />
+                      </div>
+                    ) : null}
+                  </>
                 )}
               </div>
             </article>
@@ -450,7 +468,7 @@ export function ChatSidebarPlaceholder({
         })}
       </div>
 
-      <div className="shrink-0 border-t border-slate-200 bg-[#f6f4ee] px-4 py-4">
+      <div className="shrink-0 border-t border-[var(--workbench-line)] bg-[var(--workbench-panel)] px-4 py-4">
         <ChatComposer
           disabled={!canInteract}
           onChange={setComposerHtml}
@@ -458,6 +476,17 @@ export function ChatSidebarPlaceholder({
           value={composerHtml}
         />
       </div>
+
+      <style jsx>{`
+        @keyframes stream-bar {
+          0% {
+            transform: translateX(-110%);
+          }
+          100% {
+            transform: translateX(320%);
+          }
+        }
+      `}</style>
     </aside>
   );
 }

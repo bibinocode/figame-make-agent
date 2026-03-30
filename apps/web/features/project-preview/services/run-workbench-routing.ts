@@ -15,13 +15,13 @@ import type {
 function getIntentLabel(intent: RoutingIntent | null) {
   switch (intent) {
     case "create_from_figma":
-      return "Figma 设计稿创作";
+      return "根据 Figma 设计稿创作";
     case "create_from_prompt":
-      return "提示词创作";
+      return "根据提示词创作";
     case "create_from_reference_image":
-      return "参考图创作";
+      return "根据参考图创作";
     case "modify_existing_project":
-      return "项目修改";
+      return "修改现有项目";
     default:
       return "未识别";
   }
@@ -63,7 +63,7 @@ function createStep(
 
 export function createPendingRoutingNode(): WorkbenchRoutingNode {
   return {
-    title: "标准流程",
+    title: "标准路由",
     badge: "分析中",
     summary: "正在解析输入并匹配最合适的 Agent 路由。",
     status: "active",
@@ -104,7 +104,7 @@ export function buildRoutingNode(
 
   if (!accepted || !snapshot.activeFlowId) {
     return {
-      title: "标准流程",
+      title: "标准路由",
       badge: "分析失败",
       summary: "本轮没有命中可执行路由，请补充更明确的需求或有效链接。",
       status: "error",
@@ -133,7 +133,7 @@ export function buildRoutingNode(
   }
 
   return {
-    title: "标准流程",
+    title: "标准路由",
     badge: "分析完成",
     summary: `已识别 ${sourceSummary}，主意图为 ${getIntentLabel(accepted.intent)}。`,
     status: "active",

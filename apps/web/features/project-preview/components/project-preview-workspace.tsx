@@ -17,7 +17,7 @@ type ProjectPreviewWorkspaceProps = {
 };
 
 const STATUS_LABELS = {
-  booting: "正在启动浏览器运行时",
+  booting: "正在启动 WebContainer",
   error: "运行时启动失败",
   idle: "等待初始化",
   installing: "正在安装依赖",
@@ -25,8 +25,11 @@ const STATUS_LABELS = {
   ready: "开发服务已就绪",
   starting: "正在启动开发服务",
   stopped: "开发服务已停止",
-  unsupported: "当前浏览器环境不支持 WebContainer",
+  unsupported: "当前环境不支持 WebContainer",
 } as const;
+
+const PANE_BUTTON_CLASS =
+  "inline-flex h-7 items-center border border-[var(--workbench-line)] bg-[var(--workbench-surface)] px-2 text-xs font-medium text-[var(--workbench-muted)] transition-colors duration-[var(--workbench-transition-fast)] hover:border-[var(--workbench-accent)] hover:text-[var(--workbench-text)]";
 
 export function ProjectPreviewWorkspace({
   template,
@@ -68,7 +71,6 @@ export function ProjectPreviewWorkspace({
 
   const session = useWebcontainerSession({ template });
   const activeFileCode = files[activeFilePath] ?? "";
-  const statusLabel = STATUS_LABELS[session.status];
   const writeFile = session.writeFile;
 
   useEffect(() => {
@@ -139,28 +141,18 @@ export function ProjectPreviewWorkspace({
   };
 
   return (
-    <section className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-      <header className="flex h-12 shrink-0 items-center justify-between border-b border-slate-200 bg-[#f7f4ec] px-4">
-        <div className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-500">
-            工作区预览
-          </p>
-          <h2 className="truncate text-sm font-semibold text-slate-950">
+    <section className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden border-r border-[var(--workbench-line)] bg-[var(--workbench-surface)]">
+      <header className="flex h-11 shrink-0 items-center justify-between border-b border-[var(--workbench-line)] bg-[var(--workbench-panel)] px-4">
+        <div className="min-w-0 flex items-center gap-2">
+          <h2 className="truncate text-sm font-semibold text-[var(--workbench-text)]">
             {templateLabel}
           </h2>
+          <span className="border border-[var(--workbench-line)] bg-[var(--workbench-surface)] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--workbench-muted)]">
+            IDE
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
-          <StatusBadge label={statusLabel} tone={session.status} />
-          <ActionButton
-            label="重装依赖"
-            onClick={() => void session.reinstallDependencies()}
-          />
-          <ActionButton
-            label="重启服务"
-            onClick={() => void session.startDevServer()}
-          />
-          <ActionButton label="停止服务" onClick={session.stopDevServer} />
           <ModeButton
             isActive={mode === "code"}
             label="代码"
@@ -175,24 +167,24 @@ export function ProjectPreviewWorkspace({
       </header>
 
       {mode === "code" ? (
-        <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden bg-white">
+        <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden bg-[var(--workbench-surface)]">
           {!isFilePaneCollapsed ? (
             <>
               <aside
-                className="flex shrink-0 flex-col border-r border-slate-200 bg-[#fbfaf6]"
+                className="flex shrink-0 flex-col border-r border-[var(--workbench-line)] bg-[var(--workbench-panel-muted)]"
                 style={{ width: filePaneWidth }}
               >
-                <div className="flex h-10 shrink-0 items-center justify-between border-b border-slate-200 px-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-500">
-                    文件
+                <div className="flex h-9 shrink-0 items-center justify-between border-b border-[var(--workbench-line)] px-3">
+                  <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--workbench-muted)]">
+                    资源管理器
                   </p>
                   <PaneToggleButton
-                    label="收起文件"
+                    label="收起文件栏"
                     onClick={toggleFilePane}
                     shortLabel="收起"
                   />
                 </div>
-                <div className="min-h-0 flex-1 overflow-auto px-3 py-3">
+                <div className="min-h-0 flex-1 overflow-auto px-2 py-2">
                   <div className="space-y-1">
                     {fileTree.map((node) => (
                       <FileTreeItem
@@ -209,7 +201,7 @@ export function ProjectPreviewWorkspace({
               </aside>
 
               <div
-                className="group relative w-1 shrink-0 cursor-col-resize bg-slate-200/80 transition hover:bg-slate-400"
+                className="group relative w-1 shrink-0 cursor-col-resize bg-[var(--workbench-line)] transition-colors duration-[var(--workbench-transition-fast)] hover:bg-[var(--workbench-accent)]"
                 onPointerDown={beginFilePaneResize}
                 role="separator"
               >
@@ -219,23 +211,25 @@ export function ProjectPreviewWorkspace({
           ) : null}
 
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-            <div className="flex h-10 shrink-0 items-center justify-between border-b border-slate-200 px-4 text-sm">
+            <div className="flex h-9 shrink-0 items-center justify-between border-b border-[var(--workbench-line)] bg-[var(--workbench-surface-alt)] px-3 text-sm">
               <div className="flex min-w-0 items-center gap-2">
                 <PaneToggleButton
-                  label={isFilePaneCollapsed ? "展开文件" : "收起文件"}
+                  label={isFilePaneCollapsed ? "展开文件栏" : "收起文件栏"}
                   onClick={toggleFilePane}
-                  shortLabel={isFilePaneCollapsed ? "文件" : "文件"}
+                  shortLabel="文件"
                 />
                 <PaneToggleButton
                   label={isTerminalCollapsed ? "展开终端" : "收起终端"}
                   onClick={toggleTerminal}
-                  shortLabel={isTerminalCollapsed ? "终端" : "终端"}
+                  shortLabel="终端"
                 />
-                <span className="truncate font-medium text-slate-950">
+                <span className="truncate font-mono text-xs text-[var(--workbench-text)]">
                   {activeFilePath.slice(1)}
                 </span>
               </div>
-              <span className="text-slate-400">Monaco 编辑器</span>
+              <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--workbench-muted)]">
+                Monaco Editor
+              </span>
             </div>
 
             <div className="min-h-0 flex-1 overflow-hidden">
@@ -251,14 +245,14 @@ export function ProjectPreviewWorkspace({
             {!isTerminalCollapsed ? (
               <>
                 <div
-                  className="relative h-1 shrink-0 cursor-row-resize bg-slate-200/80 transition hover:bg-slate-400"
+                  className="relative h-1 shrink-0 cursor-row-resize bg-[var(--workbench-line)] transition-colors duration-[var(--workbench-transition-fast)] hover:bg-[var(--workbench-accent)]"
                   onPointerDown={beginTerminalResize}
                   role="separator"
                 >
                   <div className="absolute inset-x-0 top-1/2 h-3 -translate-y-1/2" />
                 </div>
                 <div
-                  className="shrink-0 border-t border-slate-200"
+                  className="shrink-0 border-t border-[var(--workbench-terminal-border)]"
                   style={{ height: terminalPaneHeight }}
                 >
                   <TerminalPane
@@ -273,11 +267,11 @@ export function ProjectPreviewWorkspace({
           </div>
         </div>
       ) : (
-        <div className="min-h-0 flex-1 overflow-hidden bg-white">
+        <div className="min-h-0 flex-1 overflow-hidden bg-[var(--workbench-surface)]">
           <PreviewPane
             errorMessage={session.errorMessage}
             previewUrl={session.previewUrl}
-            statusLabel={statusLabel}
+            statusLabel={STATUS_LABELS[session.status]}
           />
         </div>
       )}
@@ -298,7 +292,7 @@ function PaneToggleButton({
 }: PaneToggleButtonProps) {
   return (
     <button
-      className="inline-flex h-7 items-center rounded-md border border-slate-200 bg-white px-2 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-950"
+      className={PANE_BUTTON_CLASS}
       onClick={onClick}
       title={label}
       type="button"
@@ -319,55 +313,16 @@ function ModeButton({ isActive, label, onClick }: ModeButtonProps) {
     <button
       aria-pressed={isActive}
       className={[
-        "h-9 rounded-md border px-3 text-sm font-medium transition",
+        "h-8 border px-3 text-sm font-medium transition-colors duration-[var(--workbench-transition-fast)]",
         isActive
-          ? "border-slate-950 bg-slate-950 text-white"
-          : "border-slate-300 bg-white text-slate-700 hover:border-slate-400",
+          ? "border-[var(--workbench-accent)] bg-[var(--workbench-accent)] text-white"
+          : "border-[var(--workbench-line)] bg-[var(--workbench-surface)] text-[var(--workbench-muted)] hover:border-[var(--workbench-accent)] hover:text-[var(--workbench-text)]",
       ].join(" ")}
       onClick={onClick}
       type="button"
     >
       {label}
     </button>
-  );
-}
-
-type ActionButtonProps = {
-  label: string;
-  onClick: () => void;
-};
-
-function ActionButton({ label, onClick }: ActionButtonProps) {
-  return (
-    <button
-      className="hidden h-9 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-700 transition hover:border-slate-400 lg:inline-flex lg:items-center"
-      onClick={onClick}
-      type="button"
-    >
-      {label}
-    </button>
-  );
-}
-
-type StatusBadgeProps = {
-  label: string;
-  tone: keyof typeof STATUS_LABELS;
-};
-
-function StatusBadge({ label, tone }: StatusBadgeProps) {
-  const toneClassName =
-    tone === "error"
-      ? "bg-rose-100 text-rose-700"
-      : tone === "ready"
-        ? "bg-emerald-100 text-emerald-700"
-        : "bg-slate-200 text-slate-700";
-
-  return (
-    <div
-      className={`hidden h-9 items-center rounded-md px-3 text-sm font-medium lg:inline-flex ${toneClassName}`}
-    >
-      {label}
-    </div>
   );
 }
 
@@ -394,9 +349,10 @@ function FileTreeItem({
     <div className="relative">
       <button
         className={[
-          "relative flex h-8 w-full items-center gap-2 px-2 text-left text-sm transition",
-          "before:absolute before:-left-2 before:top-1/2 before:h-px before:w-2 before:bg-slate-200",
-          isActive ? "bg-slate-950 text-white" : "text-slate-700 hover:bg-slate-100",
+          "relative flex h-8 w-full items-center gap-2 border-l px-2 text-left text-sm transition-colors duration-[var(--workbench-transition-fast)]",
+          isActive
+            ? "border-[var(--workbench-accent)] bg-[var(--workbench-accent-soft)] text-[var(--workbench-accent-strong)]"
+            : "border-transparent text-[var(--workbench-muted)] hover:bg-[var(--workbench-surface)] hover:text-[var(--workbench-text)]",
         ].join(" ")}
         onClick={() => {
           if (isDirectory) {
@@ -409,17 +365,19 @@ function FileTreeItem({
         type="button"
       >
         {isDirectory ? (
-          <span className="w-4 text-xs text-slate-400">
+          <span className="w-4 font-mono text-xs text-[var(--workbench-muted)]">
             {isExpanded ? "v" : ">"}
           </span>
         ) : (
-          <span className="w-4 text-xs text-slate-300">-</span>
+          <span className="w-4 font-mono text-xs text-[var(--workbench-muted)]">
+            -
+          </span>
         )}
-        <span>{node.name}</span>
+        <span className="truncate font-mono text-xs">{node.name}</span>
       </button>
 
       {isDirectory && isExpanded ? (
-        <div className="ml-4 border-l border-slate-200 pl-2">
+        <div className="ml-3 border-l border-[var(--workbench-line)] pl-2">
           {node.children.map((child) => (
             <FileTreeItem
               activePath={activePath}

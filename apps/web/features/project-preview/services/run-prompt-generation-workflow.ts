@@ -8,12 +8,12 @@ import {
   type PromptGenerationArtifactEnvelope,
   type PromptGenerationArtifactKey,
   type PromptGenerationPhaseState,
-  type PromptGenerationStepNode,
   type PromptGenerationStepId,
-  type PromptGenerationStepState,
+  type PromptGenerationStepNode,
   type PromptGenerationWorkflowPatch,
   type PromptGenerationWorkflowState,
 } from "@figame/agent-core";
+import { DEFAULT_PROMPT_GENERATION_DESIGN_CONTEXT } from "../design/workbench-ui-skill-preset";
 import { generateStructuredWorkflowStep } from "./generate-structured-workflow-step";
 import type {
   WorkbenchChatMessage,
@@ -284,7 +284,7 @@ function buildFinalAssistantSummary(workflow: PromptGenerationWorkflowState) {
 
   return [
     "应用规划流程已完成。",
-    `应用名称：${appName}。`,
+    `应用名称：「${appName}」。`,
     `共完成 ${workflow.summary.completedStepCount}/${workflow.summary.totalStepCount} 个步骤。`,
     `项目组装结果包含 ${workflow.summary.totalFiles} 个文件。`,
     `入口文件：${entryFiles}。`,
@@ -299,12 +299,14 @@ export async function runPromptGenerationWorkflow({
   workflowMessageId,
   updateMessage,
 }: RunPromptGenerationWorkflowOptions) {
-  let workflow = createInitialPromptGenerationWorkflowState(messageText);
+  let workflow = createInitialPromptGenerationWorkflowState(messageText, {
+    designContext: DEFAULT_PROMPT_GENERATION_DESIGN_CONTEXT,
+  });
   setPromptGenerationWorkflow(workflow);
 
   updateMessage(workflowMessageId, {
     status: "streaming",
-    text: "Prompt 生成流程执行中。",
+    text: "应用生成流程执行中。",
   });
 
   for (const stepNode of PROMPT_GENERATION_STEP_NODES) {
@@ -390,7 +392,7 @@ export async function runPromptGenerationWorkflow({
       setPromptGenerationWorkflow(workflow);
       updateMessage(workflowMessageId, {
         status: "error",
-        text: `${stepNode.title}失败：${lastError}`,
+        text: `${stepNode.title} 失败：${lastError}`,
       });
       throw new Error(lastError);
     }
@@ -405,7 +407,7 @@ export async function runPromptGenerationWorkflow({
   const finalMessage = buildFinalAssistantSummary(workflow);
   updateMessage(workflowMessageId, {
     status: "done",
-    text: "Prompt 生成流程已完成。",
+    text: "应用生成流程已完成。",
   });
 
   return {

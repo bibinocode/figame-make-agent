@@ -80,6 +80,30 @@ export const PromptGenerationStepStateSchema = z.object({
   completedAt: z.string().nullable().default(null),
 });
 
+export const PromptGenerationDesignContextSchema = z.object({
+  colors: z.object({
+    accent: z.string(),
+    accentSoft: z.string(),
+    background: z.string(),
+    panel: z.string(),
+    text: z.string(),
+  }),
+  motion: z.object({
+    fast: z.string(),
+    normal: z.string(),
+    slow: z.string(),
+  }),
+  query: z.string(),
+  rules: z.array(z.string()),
+  source: z.string(),
+  styleKeywords: z.array(z.string()),
+  styleName: z.string(),
+  typography: z.object({
+    body: z.string(),
+    mono: z.string(),
+  }),
+});
+
 export const PromptGenerationWorkflowMetaSchema = z.object({
   workflowId: z.string(),
   intent: z.literal("create_from_prompt"),
@@ -107,6 +131,7 @@ export const PromptGenerationWorkflowStateSchema = z.object({
     PromptGenerationArtifactKeySchema,
     PromptGenerationArtifactEnvelopeSchema,
   ),
+  designContext: PromptGenerationDesignContextSchema.nullable().default(null),
   summary: PromptGenerationSummarySchema,
 });
 
@@ -131,6 +156,9 @@ export type PromptGenerationPhaseState = z.infer<
 >;
 export type PromptGenerationStepState = z.infer<
   typeof PromptGenerationStepStateSchema
+>;
+export type PromptGenerationDesignContext = z.infer<
+  typeof PromptGenerationDesignContextSchema
 >;
 export type PromptGenerationWorkflowMeta = z.infer<
   typeof PromptGenerationWorkflowMetaSchema

@@ -44,12 +44,15 @@ export function TerminalPane({
     const terminal = new Terminal({
       convertEol: true,
       cursorBlink: true,
+      cursorStyle: "bar",
       fontFamily:
-        "var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace",
+        "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, monospace",
       fontSize: 13,
       theme: {
-        background: "#0f172a",
-        foreground: "#e2e8f0",
+        background: "#0b1220",
+        cursor: "#60a5fa",
+        foreground: "#dbe7f5",
+        selectionBackground: "rgba(96, 165, 250, 0.24)",
       },
     });
     const fitAddon = new FitAddon();
@@ -99,5 +102,10 @@ export function TerminalPane({
     }
   }, [output]);
 
-  return <div className="h-full w-full bg-[#0f172a]" ref={containerRef} />;
+  return (
+    <div
+      className="h-full w-full border-t border-[var(--workbench-terminal-border)] bg-[var(--workbench-terminal)]"
+      ref={containerRef}
+    />
+  );
 }

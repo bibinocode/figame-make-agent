@@ -28,7 +28,7 @@ export function ChatComposer({
     editorProps: {
       attributes: {
         class:
-          "max-h-[220px] min-h-[96px] overflow-y-auto px-4 py-4 text-sm leading-7 text-slate-900 outline-none",
+          "max-h-[240px] min-h-[116px] overflow-y-auto px-4 py-4 pb-14 text-sm leading-7 text-[var(--workbench-text)] outline-none",
       },
       handleKeyDown: (_, event) => {
         if (event.key === "Enter" && !event.shiftKey) {
@@ -60,7 +60,8 @@ export function ChatComposer({
       }),
       Placeholder.configure({
         emptyEditorClass: "is-editor-empty",
-        placeholder: "直接描述你的创作需求，或者粘贴 Figma 链接开始创作...",
+        placeholder:
+          "输入创作需求、修改指令或 Figma 链接。Enter 发送，Shift + Enter 换行。",
       }),
     ],
     immediatelyRender: false,
@@ -86,18 +87,17 @@ export function ChatComposer({
   const canSubmit = !disabled && Boolean(editor?.getText().trim());
 
   return (
-    <div className="border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-        <div>
-          <p className="text-[11px] font-semibold tracking-[0.2em] text-slate-400">
-            AI 输入区
-          </p>
-          <p className="mt-1 text-xs text-slate-500">
-            Enter 发送，Shift + Enter 换行
-          </p>
-        </div>
+    <div className="relative border border-[var(--workbench-line)] bg-[var(--workbench-surface)]">
+      <div className="figame-chat-composer">
+        <EditorContent editor={editor} />
+      </div>
+
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between bg-[linear-gradient(180deg,rgba(255,255,255,0),var(--workbench-surface)_38%)] px-3 py-3">
+        <span className="text-[11px] text-[var(--workbench-muted)]">
+          支持普通对话、创作、修改、Figma 链接
+        </span>
         <button
-          className="h-10 bg-slate-950 px-4 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+          className="pointer-events-auto inline-flex h-8 items-center border border-[var(--workbench-accent)] bg-[var(--workbench-accent)] px-3 text-sm font-medium text-white transition-colors duration-[var(--workbench-transition-fast)] hover:bg-[var(--workbench-accent-strong)] disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-300"
           disabled={!canSubmit}
           onClick={() => {
             if (!editor) {
@@ -121,13 +121,9 @@ export function ChatComposer({
         </button>
       </div>
 
-      <div className="figame-chat-composer">
-        <EditorContent editor={editor} />
-      </div>
-
       <style jsx global>{`
         .figame-chat-composer .tiptap p.is-editor-empty:first-child::before {
-          color: #94a3b8;
+          color: var(--workbench-muted);
           content: attr(data-placeholder);
           float: left;
           height: 0;

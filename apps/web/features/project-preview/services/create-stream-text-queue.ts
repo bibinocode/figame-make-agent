@@ -4,23 +4,11 @@ type StreamTextQueueOptions = {
 };
 
 function getChunkSize(pendingCount: number) {
-  if (pendingCount > 96) {
-    return 8;
-  }
-
-  if (pendingCount > 48) {
-    return 6;
-  }
-
-  if (pendingCount > 24) {
-    return 4;
-  }
-
-  if (pendingCount > 12) {
+  if (pendingCount > 160) {
     return 3;
   }
 
-  if (pendingCount > 4) {
+  if (pendingCount > 64) {
     return 2;
   }
 
@@ -28,63 +16,58 @@ function getChunkSize(pendingCount: number) {
 }
 
 export function createStreamTextQueue({
-  intervalMs = 16,
+  intervalMs = 22,
   onUpdate,
 }: StreamTextQueueOptions) {
   let renderedText = "";
-  let targetChars: string[] = [];
-  let renderedCount = 0;
+  let pendingChars: string[] = [];
   let timerId: number | null = null;
 
-  const commit = () => {
-    renderedText = targetChars.slice(0, renderedCount).join("");
+  const commit = (count: number) => {
+    if (count <= 0) {
+      return;
+    }
+
+    renderedText += pendingChars.slice(0, count).join("");
+    pendingChars = pendingChars.slice(count);
     onUpdate(renderedText);
   };
 
   const schedule = () => {
-    if (timerId !== null) {
+    if (timerId !== null || pendingChars.length === 0) {
       return;
     }
 
     timerId = window.setTimeout(() => {
       timerId = null;
 
-      if (renderedCount >= targetChars.length) {
+      if (pendingChars.length === 0) {
         return;
       }
 
-      const pendingCount = targetChars.length - renderedCount;
-      renderedCount = Math.min(
-        targetChars.length,
-        renderedCount + getChunkSize(pendingCount),
-      );
-      commit();
+      commit(getChunkSize(pendingChars.length));
 
-      if (renderedCount < targetChars.length) {
+      if (pendingChars.length > 0) {
         schedule();
       }
     }, intervalMs);
   };
 
   return {
-    setTarget(nextText: string) {
-      if (!nextText.startsWith(renderedText)) {
-        renderedText = "";
-        renderedCount = 0;
-      }
-
-      targetChars = Array.from(nextText);
-
-      if (renderedCount >= targetChars.length) {
-        commit();
+    push(chunk: string) {
+      if (!chunk) {
         return;
       }
 
+      pendingChars.push(...Array.from(chunk));
       schedule();
     },
     flush(finalText?: string) {
       if (typeof finalText === "string") {
-        targetChars = Array.from(finalText);
+        renderedText = finalText;
+        pendingChars = [];
+      } else if (pendingChars.length > 0) {
+        commit(pendingChars.length);
       }
 
       if (timerId !== null) {
@@ -92,8 +75,7 @@ export function createStreamTextQueue({
         timerId = null;
       }
 
-      renderedCount = targetChars.length;
-      commit();
+      onUpdate(renderedText);
     },
     stop() {
       if (timerId !== null) {
