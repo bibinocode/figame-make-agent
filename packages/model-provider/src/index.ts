@@ -9,6 +9,7 @@ export * from "./registry/provider-registry";
 
 export * from "./providers/deepseek/descriptor";
 export * from "./providers/minimax/descriptor";
+export * from "./providers/ollama/descriptor";
 export * from "./providers/openai/descriptor";
 
 export * from "./utils/assert-capability";

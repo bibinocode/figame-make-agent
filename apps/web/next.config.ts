@@ -19,6 +19,9 @@ const nextConfig: NextConfig = {
     ];
   },
   transpilePackages: [
+    "@figame/agent-core",
+    "@figame/agent-flows",
+    "@figame/model-provider",
     "@figame/template-system",
     "@figame/webcontainer-runtime",
   ],

@@ -50,6 +50,10 @@ export function getProviderDescriptor(
   return descriptor;
 }
 
+export function hasProviderDescriptor(provider: ProviderId): boolean {
+  return providerRegistry.has(provider);
+}
+
 /**
  * 返回当前已注册的 provider 列表
  * 这个函数后面在调试、面板展示、测试里都会很有用。

@@ -14,14 +14,14 @@ export function ProjectPreviewWorkbench({
 }: ProjectPreviewWorkbenchProps) {
   return (
     <div className="min-h-screen bg-[#f4f1e8] text-slate-950">
-      <WorkbenchTopbar projectTitle="智能体项目工作台" />
+      <WorkbenchTopbar projectTitle="Figame Agent Workspace" />
 
       <main className="flex min-h-[calc(100vh-56px)]">
         <ProjectPreviewWorkspace
           template={template}
           templateLabel={templateLabel}
         />
-        <ChatSidebarPlaceholder />
+        <ChatSidebarPlaceholder activeFilePath={template.preview.activeFile} />
       </main>
     </div>
   );

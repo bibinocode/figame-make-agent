@@ -19,6 +19,11 @@ function readProviderEnv(provider: ProviderId): ProviderBaseConfig {
         baseURL: process.env.OPENAI_BASE_URL,
         organization: process.env.OPENAI_ORGANIZATION,
       };
+    case "ollama":
+      return {
+        apiKey: process.env.OLLAMA_API_KEY ?? "ollama-local",
+        baseURL: process.env.OLLAMA_BASE_URL ?? "http://127.0.0.1:11434",
+      };
   }
 }
 
@@ -31,6 +36,7 @@ export function readModelConfigFromEnv(): Partial<ModelConfig> {
     providers: {
       minimax: readProviderEnv("minimax"),
       deepseek: readProviderEnv("deepseek"),
+      ollama: readProviderEnv("ollama"),
       openai: readProviderEnv("openai"),
     },
   };

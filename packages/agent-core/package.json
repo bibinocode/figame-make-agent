@@ -1,0 +1,14 @@
+{
+  "name": "@figame/agent-core",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit --incremental false"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.11.0"
+}
