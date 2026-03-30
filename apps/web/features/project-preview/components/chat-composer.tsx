@@ -28,23 +28,12 @@ export function ChatComposer({
     editorProps: {
       attributes: {
         class:
-          "max-h-[240px] min-h-[116px] overflow-y-auto px-4 py-4 pb-14 text-sm leading-7 text-[var(--workbench-text)] outline-none",
+          "max-h-[240px] min-h-[116px] overflow-y-auto px-4 py-4 pr-24 text-sm leading-7 text-[var(--workbench-text)] outline-none",
       },
       handleKeyDown: (_, event) => {
         if (event.key === "Enter" && !event.shiftKey) {
           event.preventDefault();
-
-          const text = editor?.getText().trim() ?? "";
-
-          if (!text || disabled) {
-            return true;
-          }
-
-          onSubmit({
-            html: editor?.getHTML() ?? "",
-            text,
-          });
-
+          submitCurrentMessage();
           return true;
         }
 
@@ -70,6 +59,23 @@ export function ChatComposer({
     },
   });
 
+  const submitCurrentMessage = () => {
+    if (!editor) {
+      return;
+    }
+
+    const text = editor.getText().trim();
+
+    if (!text || disabled) {
+      return;
+    }
+
+    onSubmit({
+      html: editor.getHTML(),
+      text,
+    });
+  };
+
   useEffect(() => {
     if (!editor) {
       return;
@@ -92,29 +98,14 @@ export function ChatComposer({
         <EditorContent editor={editor} />
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between bg-[linear-gradient(180deg,rgba(255,255,255,0),var(--workbench-surface)_38%)] px-3 py-3">
-        <span className="text-[11px] text-[var(--workbench-muted)]">
-          支持普通对话、创作、修改、Figma 链接
+      <div className="pointer-events-none absolute bottom-3 right-3 flex items-center gap-2">
+        <span className="hidden border border-[var(--workbench-line)] bg-[var(--workbench-panel)] px-2 py-1 text-[11px] text-[var(--workbench-muted)] lg:inline-flex">
+          Enter 发送
         </span>
         <button
           className="pointer-events-auto inline-flex h-8 items-center border border-[var(--workbench-accent)] bg-[var(--workbench-accent)] px-3 text-sm font-medium text-white transition-colors duration-[var(--workbench-transition-fast)] hover:bg-[var(--workbench-accent-strong)] disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-300"
           disabled={!canSubmit}
-          onClick={() => {
-            if (!editor) {
-              return;
-            }
-
-            const text = editor.getText().trim();
-
-            if (!text) {
-              return;
-            }
-
-            onSubmit({
-              html: editor.getHTML(),
-              text,
-            });
-          }}
+          onClick={submitCurrentMessage}
           type="button"
         >
           发送

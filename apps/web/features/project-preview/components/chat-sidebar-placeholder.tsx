@@ -227,9 +227,7 @@ export function ChatSidebarPlaceholder({
       routingNode: buildRoutingNode(snapshot),
     });
 
-    const hasPromptSource = envelope.sources.some(
-      (source) => source.kind === "prompt",
-    );
+    const hasPromptSource = envelope.sources.some((source) => source.kind === "prompt");
     let routingNodeVisible = true;
 
     if (
@@ -355,14 +353,14 @@ export function ChatSidebarPlaceholder({
         },
         {
           onChunk: (value) => {
-            latestText = value;
+            latestText += value;
 
             if (routingNodeVisible) {
               removeMessage(routingMessageId);
               routingNodeVisible = false;
             }
 
-            streamTextQueue.setTarget(value);
+            streamTextQueue.push(value);
           },
         },
       );

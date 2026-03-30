@@ -40,7 +40,7 @@ export function RoutingAnalysisNode({ node }: RoutingAnalysisNodeProps) {
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--workbench-muted)]">
-              Routing Analysis
+              路由分析
             </p>
             <h3 className="mt-1 text-sm font-semibold text-[var(--workbench-text)]">
               {node.title}

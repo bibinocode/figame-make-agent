@@ -119,7 +119,7 @@ export function WorkflowStepNode({ message }: WorkflowStepNodeProps) {
       >
         <div className="min-w-0">
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--workbench-muted)]">
-            Application Workflow
+            应用生成流程
           </p>
           <h3 className="mt-1 text-sm font-semibold text-[var(--workbench-text)]">
             {workflowNode.summaryTitle ?? workflow.summary.appName ?? "应用生成流程"}
