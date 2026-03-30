@@ -1,24 +1,81 @@
 "use client";
 
 import Editor, { type Monaco } from "@monaco-editor/react";
+import { useEffect, useEffectEvent, useRef } from "react";
+import {
+  syncMonacoModels,
+  toMonacoModelUri,
+  toProjectFilePath,
+} from "./monaco-model-sync";
 
 type MonacoEditorPaneProps = {
   filePath: string;
+  files: Record<string, string>;
+  onActiveFileChange: (path: string) => void;
   value: string;
   onChange: (value: string) => void;
 };
 
+type Disposable = {
+  dispose: () => void;
+};
+
 export function MonacoEditorPane({
   filePath,
+  files,
+  onActiveFileChange,
   value,
   onChange,
 }: MonacoEditorPaneProps) {
+  const modelSubscriptionRef = useRef<Disposable | null>(null);
+  const monacoRef = useRef<Monaco | null>(null);
+  const handleActiveFileChange = useEffectEvent((path: string) => {
+    onActiveFileChange(path);
+  });
+
+  useEffect(() => {
+    if (!monacoRef.current) {
+      return;
+    }
+
+    syncMonacoModels(monacoRef.current, files);
+  }, [files]);
+
+  useEffect(() => {
+    return () => {
+      modelSubscriptionRef.current?.dispose();
+      modelSubscriptionRef.current = null;
+      monacoRef.current = null;
+    };
+  }, []);
+
   return (
     <Editor
-      beforeMount={configureMonaco}
+      beforeMount={(monaco) => {
+        configureMonaco(monaco);
+        syncMonacoModels(monaco, files);
+      }}
       defaultLanguage={getLanguage(filePath)}
       height="100%"
       language={getLanguage(filePath)}
+      onMount={(editorInstance, monaco) => {
+        monacoRef.current = monaco;
+        syncMonacoModels(monaco, files);
+        modelSubscriptionRef.current?.dispose();
+        modelSubscriptionRef.current = editorInstance.onDidChangeModel(() => {
+          const nextUri = editorInstance.getModel()?.uri.toString();
+
+          if (!nextUri) {
+            return;
+          }
+
+          const nextFilePath = toProjectFilePath(nextUri);
+
+          if (nextFilePath) {
+            handleActiveFileChange(nextFilePath);
+          }
+        });
+      }}
       options={{
         automaticLayout: true,
         fontFamily:
@@ -37,9 +94,9 @@ export function MonacoEditorPane({
         snippetSuggestions: "inline",
         suggestOnTriggerCharacters: true,
         tabCompletion: "on",
-        wordBasedSuggestions: "currentDocument",
+        wordBasedSuggestions: "allDocuments",
       }}
-      path={filePath}
+      path={toMonacoModelUri(filePath)}
       theme="vs"
       value={value}
       onChange={(nextValue) => onChange(nextValue ?? "")}
@@ -58,8 +115,8 @@ function configureMonaco(monaco: Monaco) {
     target: monaco.languages.typescript.ScriptTarget.ES2022,
   };
 
-  // 浏览器内没有真实 node_modules，这里先关闭语义错误噪音，
-  // 保留 Monaco 自带的语言高亮、括号补全、基础建议和快捷编辑体验。
+  monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true);
+  monaco.languages.typescript.javascriptDefaults.setEagerModelSync(true);
   monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
     noSemanticValidation: true,
     noSuggestionDiagnostics: false,

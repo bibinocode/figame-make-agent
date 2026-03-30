@@ -2,7 +2,16 @@
 
 import type { AssembledTemplate } from "@figame/template-system";
 import type { WebContainer, WebContainerProcess } from "@webcontainer/api";
-import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { acquireWebContainerLease } from "./webcontainer-instance";
+import {
+  type WebcontainerCommand,
+  getWebcontainerBootstrapCommand,
+  getWebcontainerDevCommand,
+  getWebcontainerInstallCommand,
+  getWebcontainerNpmrcContents,
+  getWebcontainerNpmrcPath,
+} from "./webcontainer-package-manager";
 
 export type WebcontainerSessionStatus =
   | "idle"
@@ -33,6 +42,14 @@ type UseWebcontainerSessionResult = {
   writeFile: (path: string, code: string) => Promise<void>;
 };
 
+const STOPPED_MESSAGE = "\r\n[system] 开发服务已停止\r\n";
+const PREVIEW_READY_PREFIX = "\r\n[system] 预览服务已就绪：";
+const MOUNTING_MESSAGE = "[system] 正在挂载模板文件...\r\n";
+const UNSUPPORTED_MESSAGE =
+  "当前页面没有开启跨源隔离，WebContainer 无法启动。请确认 Next.js 已返回 COOP/COEP 响应头。";
+const REINSTALL_ERROR_MESSAGE = "重新安装依赖时发生未知错误。";
+const BOOT_ERROR_MESSAGE = "WebContainer 启动失败。";
+
 export function useWebcontainerSession({
   template,
 }: UseWebcontainerSessionOptions): UseWebcontainerSessionResult {
@@ -49,15 +66,18 @@ export function useWebcontainerSession({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isTerminalReady, setIsTerminalReady] = useState(false);
 
-  const appendOutput = useEffectEvent((chunk: string) => {
+  const appendOutput = useCallback((chunk: string) => {
     setOutput((current) => `${current}${chunk}`);
-  });
+  }, []);
 
-  const markError = useEffectEvent((message: string) => {
-    setErrorMessage(message);
-    setStatus("error");
-    appendOutput(`\r\n[error] ${message}\r\n`);
-  });
+  const markError = useCallback(
+    (message: string) => {
+      setErrorMessage(message);
+      setStatus("error");
+      appendOutput(`\r\n[error] ${message}\r\n`);
+    },
+    [appendOutput],
+  );
 
   const pipeProcessOutput = useCallback(
     (process: WebContainerProcess) => {
@@ -72,12 +92,51 @@ export function useWebcontainerSession({
     [appendOutput],
   );
 
+  const runCommand = useCallback(
+    async (command: WebcontainerCommand) => {
+      if (!containerRef.current) {
+        return null;
+      }
+
+      appendOutput(`\r\n${command.label}\r\n`);
+
+      return containerRef.current.spawn(command.command, command.args, {
+        terminal: terminalSizeRef.current,
+      });
+    },
+    [appendOutput],
+  );
+
+  const runCommandAndWait = useCallback(
+    async (command: WebcontainerCommand) => {
+      const process = await runCommand(command);
+
+      if (!process) {
+        return;
+      }
+
+      const exitCode = await Promise.all([
+        process.exit,
+        pipeProcessOutput(process),
+      ]).then(([value]) => value);
+
+      if (exitCode !== 0) {
+        throw new Error(`${command.label} 失败，退出码 ${exitCode}`);
+      }
+    },
+    [pipeProcessOutput, runCommand],
+  );
+
   const stopDevServer = useCallback(() => {
-    devServerProcessRef.current?.kill();
+    if (!devServerProcessRef.current) {
+      return;
+    }
+
+    devServerProcessRef.current.kill();
     devServerProcessRef.current = null;
     setPreviewUrl(null);
     setStatus("stopped");
-    appendOutput("\r\n[system] 开发服务已停止\r\n");
+    appendOutput(STOPPED_MESSAGE);
   }, [appendOutput]);
 
   const startShell = useCallback(async () => {
@@ -100,22 +159,23 @@ export function useWebcontainerSession({
       return;
     }
 
-    devServerProcessRef.current?.kill();
+    if (devServerProcessRef.current) {
+      devServerProcessRef.current.kill();
+    }
+
+    devServerProcessRef.current = null;
     setPreviewUrl(null);
     setStatus("starting");
-    appendOutput("\r\n$ npm run dev\r\n");
 
-    const devServerProcess = await containerRef.current.spawn(
-      "npm",
-      ["run", "dev"],
-      {
-        terminal: terminalSizeRef.current,
-      },
-    );
+    const devServerProcess = await runCommand(getWebcontainerDevCommand());
+
+    if (!devServerProcess) {
+      return;
+    }
 
     devServerProcessRef.current = devServerProcess;
     void pipeProcessOutput(devServerProcess);
-  }, [appendOutput, pipeProcessOutput]);
+  }, [pipeProcessOutput, runCommand]);
 
   const installDependencies = useCallback(async () => {
     if (!containerRef.current) {
@@ -124,27 +184,22 @@ export function useWebcontainerSession({
 
     stopDevServer();
     setStatus("installing");
-    appendOutput("\r\n$ npm install\r\n");
 
-    const installProcess = await containerRef.current.spawn(
-      "npm",
-      ["install"],
-      {
-        terminal: terminalSizeRef.current,
-      },
+    await containerRef.current.fs.writeFile(
+      getWebcontainerNpmrcPath(),
+      getWebcontainerNpmrcContents(),
     );
 
-    const exitCode = await Promise.all([
-      installProcess.exit,
-      pipeProcessOutput(installProcess),
-    ]).then(([value]) => value);
+    const bootstrapCommand = getWebcontainerBootstrapCommand();
 
-    if (exitCode !== 0) {
-      throw new Error(`npm install 失败，退出码 ${exitCode}`);
+    if (bootstrapCommand) {
+      await runCommandAndWait(bootstrapCommand);
     }
 
+    await runCommandAndWait(getWebcontainerInstallCommand());
+
     dependenciesInstalledRef.current = true;
-  }, [appendOutput, pipeProcessOutput, stopDevServer]);
+  }, [runCommandAndWait, stopDevServer]);
 
   const reinstallDependencies = useCallback(async () => {
     try {
@@ -153,7 +208,7 @@ export function useWebcontainerSession({
       await startDevServer();
     } catch (error) {
       markError(
-        error instanceof Error ? error.message : "重新安装依赖时发生未知错误",
+        error instanceof Error ? error.message : REINSTALL_ERROR_MESSAGE,
       );
     }
   }, [installDependencies, markError, startDevServer]);
@@ -178,7 +233,8 @@ export function useWebcontainerSession({
 
   useEffect(() => {
     let disposed = false;
-    let teardown: (() => void) | undefined;
+    let cleanupListeners: (() => void) | undefined;
+    let releaseLease: (() => Promise<void>) | undefined;
 
     async function boot() {
       if (typeof window === "undefined") {
@@ -187,9 +243,7 @@ export function useWebcontainerSession({
 
       if (!window.crossOriginIsolated) {
         setStatus("unsupported");
-        setErrorMessage(
-          "当前页面没有开启跨源隔离，WebContainer 无法启动。请确认 Next.js 已返回 COOP/COEP 响应头。",
-        );
+        setErrorMessage(UNSUPPORTED_MESSAGE);
         return;
       }
 
@@ -209,14 +263,18 @@ export function useWebcontainerSession({
           return;
         }
 
-        const instance = await WebContainer.boot({
-          coep: "require-corp",
-          forwardPreviewErrors: "exceptions-only",
-          workdirName: "figame-workspace",
-        });
+        const lease = await acquireWebContainerLease(() =>
+          WebContainer.boot({
+            coep: "require-corp",
+            forwardPreviewErrors: "exceptions-only",
+            workdirName: "figame-workspace",
+          }),
+        );
+        const instance = lease.instance;
+        releaseLease = lease.release;
 
         if (disposed) {
-          instance.teardown();
+          await lease.release();
           return;
         }
 
@@ -226,30 +284,27 @@ export function useWebcontainerSession({
           instance.on("server-ready", (_port, url) => {
             setPreviewUrl(url);
             setStatus("ready");
-            appendOutput(`\r\n[system] 预览服务已就绪：${url}\r\n`);
+            appendOutput(`${PREVIEW_READY_PREFIX}${url}\r\n`);
           }),
           instance.on("error", ({ message }) => {
             markError(message);
           }),
         ];
 
-        teardown = () => {
+        cleanupListeners = () => {
           for (const unsubscribe of unsubscribers) {
             unsubscribe();
           }
-
-          instance.teardown();
         };
 
         setStatus("mounting");
-        appendOutput("[system] 挂载模板文件...\r\n");
+        appendOutput(MOUNTING_MESSAGE);
         await instance.mount(toWebContainerTree(template));
-
+        await startShell();
         await installDependencies();
         await startDevServer();
-        await startShell();
       } catch (error) {
-        markError(error instanceof Error ? error.message : "WebContainer 启动失败");
+        markError(error instanceof Error ? error.message : BOOT_ERROR_MESSAGE);
       }
     }
 
@@ -265,7 +320,8 @@ export function useWebcontainerSession({
       devServerProcessRef.current = null;
       containerRef.current = null;
       setIsTerminalReady(false);
-      teardown?.();
+      cleanupListeners?.();
+      void releaseLease?.();
     };
   }, [appendOutput, installDependencies, markError, startDevServer, startShell, template]);
 

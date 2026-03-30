@@ -47,14 +47,15 @@ export function ProjectPreviewWorkspace({
   const session = useWebcontainerSession({ template });
   const activeFileCode = files[activeFilePath] ?? "";
   const statusLabel = STATUS_LABELS[session.status];
+  const writeFile = session.writeFile;
 
   useEffect(() => {
     const handle = window.setTimeout(() => {
-      void session.writeFile(activeFilePath, activeFileCode);
+      void writeFile(activeFilePath, activeFileCode);
     }, 200);
 
     return () => window.clearTimeout(handle);
-  }, [activeFileCode, activeFilePath, session]);
+  }, [activeFileCode, activeFilePath, writeFile]);
 
   const handleFileChange = (nextValue: string) => {
     setFiles((current) => ({
@@ -147,6 +148,8 @@ export function ProjectPreviewWorkspace({
             <div className="min-h-0 flex-1">
               <MonacoEditorPane
                 filePath={activeFilePath}
+                files={files}
+                onActiveFileChange={setActiveFilePath}
                 value={activeFileCode}
                 onChange={handleFileChange}
               />
@@ -275,7 +278,9 @@ function FileTreeItem({
         type="button"
       >
         {isDirectory ? (
-          <span className="w-4 text-xs text-slate-400">{isExpanded ? "▾" : "▸"}</span>
+          <span className="w-4 text-xs text-slate-400">
+            {isExpanded ? "▾" : "▸"}
+          </span>
         ) : (
           <span className="w-4 text-xs text-slate-300">•</span>
         )}
