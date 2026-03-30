@@ -20,6 +20,21 @@ export function TerminalPane({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const outputLengthRef = useRef(0);
+  const onDataRef = useRef(onData);
+  const onResizeRef = useRef(onResize);
+  const isInteractiveRef = useRef(isInteractive);
+
+  useEffect(() => {
+    onDataRef.current = onData;
+  }, [onData]);
+
+  useEffect(() => {
+    onResizeRef.current = onResize;
+  }, [onResize]);
+
+  useEffect(() => {
+    isInteractiveRef.current = isInteractive;
+  }, [isInteractive]);
 
   useEffect(() => {
     if (!containerRef.current) {
@@ -41,31 +56,35 @@ export function TerminalPane({
 
     terminal.loadAddon(fitAddon);
     terminal.open(containerRef.current);
-    fitAddon.fit();
     terminalRef.current = terminal;
 
+    const fitTerminal = () => {
+      fitAddon.fit();
+      onResizeRef.current(terminal.cols, terminal.rows);
+    };
+
+    fitTerminal();
+
+    const resizeObserver = new ResizeObserver(() => {
+      fitTerminal();
+    });
+
+    resizeObserver.observe(containerRef.current);
+
     const disposeData = terminal.onData((value) => {
-      if (isInteractive) {
-        onData(value);
+      if (isInteractiveRef.current) {
+        onDataRef.current(value);
       }
     });
 
-    const resizeTerminal = () => {
-      fitAddon.fit();
-      onResize(terminal.cols, terminal.rows);
-    };
-
-    resizeTerminal();
-    window.addEventListener("resize", resizeTerminal);
-
     return () => {
-      window.removeEventListener("resize", resizeTerminal);
+      resizeObserver.disconnect();
       disposeData.dispose();
       terminal.dispose();
       terminalRef.current = null;
       outputLengthRef.current = 0;
     };
-  }, [isInteractive, onData, onResize]);
+  }, []);
 
   useEffect(() => {
     if (!terminalRef.current) {

@@ -6,6 +6,7 @@ import { MonacoEditorPane } from "../editor/monaco-editor-pane";
 import { PreviewPane } from "../preview/preview-pane";
 import { useWebcontainerSession } from "../runtime/use-webcontainer-session";
 import { buildFileTree, type FileTreeNode } from "../services/build-file-tree";
+import { useWorkbenchLayoutStore } from "../state/use-workbench-layout-store";
 import { TerminalPane } from "../terminal/terminal-pane";
 
 type WorkspaceMode = "code" | "preview";
@@ -32,12 +33,33 @@ export function ProjectPreviewWorkspace({
   templateLabel,
 }: ProjectPreviewWorkspaceProps) {
   const [mode, setMode] = useState<WorkspaceMode>("code");
-  const [activeFilePath, setActiveFilePath] = useState(template.preview.activeFile);
+  const [activeFilePath, setActiveFilePath] = useState(
+    template.preview.activeFile,
+  );
   const [files, setFiles] = useState<Record<string, string>>(() =>
     Object.fromEntries(
       Object.entries(template.files).map(([path, file]) => [path, file.code]),
     ),
   );
+
+  const filePaneWidth = useWorkbenchLayoutStore((state) => state.filePaneWidth);
+  const terminalPaneHeight = useWorkbenchLayoutStore(
+    (state) => state.terminalPaneHeight,
+  );
+  const isFilePaneCollapsed = useWorkbenchLayoutStore(
+    (state) => state.isFilePaneCollapsed,
+  );
+  const isTerminalCollapsed = useWorkbenchLayoutStore(
+    (state) => state.isTerminalCollapsed,
+  );
+  const setFilePaneWidth = useWorkbenchLayoutStore(
+    (state) => state.setFilePaneWidth,
+  );
+  const setTerminalPaneHeight = useWorkbenchLayoutStore(
+    (state) => state.setTerminalPaneHeight,
+  );
+  const toggleFilePane = useWorkbenchLayoutStore((state) => state.toggleFilePane);
+  const toggleTerminal = useWorkbenchLayoutStore((state) => state.toggleTerminal);
 
   const fileTree = useMemo(() => buildFileTree(Object.keys(files)), [files]);
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(
@@ -78,12 +100,50 @@ export function ProjectPreviewWorkspace({
     });
   };
 
+  const beginFilePaneResize = (event: React.PointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+
+    const startX = event.clientX;
+    const startWidth = filePaneWidth;
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      setFilePaneWidth(startWidth + moveEvent.clientX - startX);
+    };
+
+    const handlePointerUp = () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+  };
+
+  const beginTerminalResize = (event: React.PointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+
+    const startY = event.clientY;
+    const startHeight = terminalPaneHeight;
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      setTerminalPaneHeight(startHeight - (moveEvent.clientY - startY));
+    };
+
+    const handlePointerUp = () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+  };
+
   return (
-    <section className="flex min-h-[calc(100vh-56px)] min-w-0 flex-1 flex-col">
-      <header className="flex h-12 items-center justify-between border-b border-slate-200 bg-[#f7f4ec] px-4">
+    <section className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      <header className="flex h-12 shrink-0 items-center justify-between border-b border-slate-200 bg-[#f7f4ec] px-4">
         <div className="min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-500">
-            Project Preview
+            工作区预览
           </p>
           <h2 className="truncate text-sm font-semibold text-slate-950">
             {templateLabel}
@@ -115,57 +175,105 @@ export function ProjectPreviewWorkspace({
       </header>
 
       {mode === "code" ? (
-        <div className="flex min-h-0 flex-1 bg-white">
-          <aside className="flex w-60 shrink-0 flex-col border-r border-slate-200 bg-[#fbfaf6]">
-            <div className="border-b border-slate-200 px-4 py-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-500">
-                Files
-              </p>
-            </div>
-            <div className="min-h-0 flex-1 overflow-auto px-3 py-3">
-              <div className="space-y-1">
-                {fileTree.map((node) => (
-                  <FileTreeItem
-                    activePath={activeFilePath}
-                    expandedPaths={expandedPaths}
-                    key={node.path}
-                    node={node}
-                    onSelect={setActiveFilePath}
-                    onToggle={toggleDirectory}
+        <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden bg-white">
+          {!isFilePaneCollapsed ? (
+            <>
+              <aside
+                className="flex shrink-0 flex-col border-r border-slate-200 bg-[#fbfaf6]"
+                style={{ width: filePaneWidth }}
+              >
+                <div className="flex h-10 shrink-0 items-center justify-between border-b border-slate-200 px-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-500">
+                    文件
+                  </p>
+                  <PaneToggleButton
+                    label="收起文件"
+                    onClick={toggleFilePane}
+                    shortLabel="收起"
                   />
-                ))}
-              </div>
-            </div>
-          </aside>
+                </div>
+                <div className="min-h-0 flex-1 overflow-auto px-3 py-3">
+                  <div className="space-y-1">
+                    {fileTree.map((node) => (
+                      <FileTreeItem
+                        activePath={activeFilePath}
+                        expandedPaths={expandedPaths}
+                        key={node.path}
+                        node={node}
+                        onSelect={setActiveFilePath}
+                        onToggle={toggleDirectory}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </aside>
 
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-            <div className="flex h-10 items-center justify-between border-b border-slate-200 px-4 text-sm">
-              <span className="font-medium text-slate-950">
-                {activeFilePath.slice(1)}
-              </span>
-              <span className="text-slate-400">Monaco Editor</span>
+              <div
+                className="group relative w-1 shrink-0 cursor-col-resize bg-slate-200/80 transition hover:bg-slate-400"
+                onPointerDown={beginFilePaneResize}
+                role="separator"
+              >
+                <div className="absolute inset-y-0 left-1/2 w-3 -translate-x-1/2" />
+              </div>
+            </>
+          ) : null}
+
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+            <div className="flex h-10 shrink-0 items-center justify-between border-b border-slate-200 px-4 text-sm">
+              <div className="flex min-w-0 items-center gap-2">
+                <PaneToggleButton
+                  label={isFilePaneCollapsed ? "展开文件" : "收起文件"}
+                  onClick={toggleFilePane}
+                  shortLabel={isFilePaneCollapsed ? "文件" : "文件"}
+                />
+                <PaneToggleButton
+                  label={isTerminalCollapsed ? "展开终端" : "收起终端"}
+                  onClick={toggleTerminal}
+                  shortLabel={isTerminalCollapsed ? "终端" : "终端"}
+                />
+                <span className="truncate font-medium text-slate-950">
+                  {activeFilePath.slice(1)}
+                </span>
+              </div>
+              <span className="text-slate-400">Monaco 编辑器</span>
             </div>
-            <div className="min-h-0 flex-1">
+
+            <div className="min-h-0 flex-1 overflow-hidden">
               <MonacoEditorPane
                 filePath={activeFilePath}
                 files={files}
                 onActiveFileChange={setActiveFilePath}
-                value={activeFileCode}
                 onChange={handleFileChange}
+                value={activeFileCode}
               />
             </div>
-            <div className="h-64 border-t border-slate-200">
-              <TerminalPane
-                isInteractive={session.isTerminalReady}
-                output={session.output}
-                onData={session.sendTerminalInput}
-                onResize={session.resizeTerminal}
-              />
-            </div>
+
+            {!isTerminalCollapsed ? (
+              <>
+                <div
+                  className="relative h-1 shrink-0 cursor-row-resize bg-slate-200/80 transition hover:bg-slate-400"
+                  onPointerDown={beginTerminalResize}
+                  role="separator"
+                >
+                  <div className="absolute inset-x-0 top-1/2 h-3 -translate-y-1/2" />
+                </div>
+                <div
+                  className="shrink-0 border-t border-slate-200"
+                  style={{ height: terminalPaneHeight }}
+                >
+                  <TerminalPane
+                    isInteractive={session.isTerminalReady}
+                    onData={session.sendTerminalInput}
+                    onResize={session.resizeTerminal}
+                    output={session.output}
+                  />
+                </div>
+              </>
+            ) : null}
           </div>
         </div>
       ) : (
-        <div className="min-h-0 flex-1 bg-white">
+        <div className="min-h-0 flex-1 overflow-hidden bg-white">
           <PreviewPane
             errorMessage={session.errorMessage}
             previewUrl={session.previewUrl}
@@ -174,6 +282,29 @@ export function ProjectPreviewWorkspace({
         </div>
       )}
     </section>
+  );
+}
+
+type PaneToggleButtonProps = {
+  label: string;
+  onClick: () => void;
+  shortLabel: string;
+};
+
+function PaneToggleButton({
+  label,
+  onClick,
+  shortLabel,
+}: PaneToggleButtonProps) {
+  return (
+    <button
+      className="inline-flex h-7 items-center rounded-md border border-slate-200 bg-white px-2 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-950"
+      onClick={onClick}
+      title={label}
+      type="button"
+    >
+      {shortLabel}
+    </button>
   );
 }
 
@@ -279,10 +410,10 @@ function FileTreeItem({
       >
         {isDirectory ? (
           <span className="w-4 text-xs text-slate-400">
-            {isExpanded ? "▾" : "▸"}
+            {isExpanded ? "v" : ">"}
           </span>
         ) : (
-          <span className="w-4 text-xs text-slate-300">•</span>
+          <span className="w-4 text-xs text-slate-300">-</span>
         )}
         <span>{node.name}</span>
       </button>

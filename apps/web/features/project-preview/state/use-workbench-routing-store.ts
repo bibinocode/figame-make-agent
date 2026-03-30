@@ -44,6 +44,7 @@ export const useWorkbenchRoutingStore = create<WorkbenchRoutingState>((set) => (
   composerHtml: "",
   messages: INITIAL_MESSAGES,
   attachments: [],
+  promptGenerationWorkflow: null,
   ...EMPTY_SNAPSHOT,
   setComposerHtml(value) {
     set({ composerHtml: value });
@@ -74,10 +75,16 @@ export const useWorkbenchRoutingStore = create<WorkbenchRoutingState>((set) => (
   applyRoutingSnapshot(value) {
     set(value);
   },
+  setPromptGenerationWorkflow(value) {
+    set({ promptGenerationWorkflow: value });
+  },
   setExecutionStatus(value) {
     set((current) => applyExecutionStatus(current, value));
   },
   resetRouting() {
-    set(EMPTY_SNAPSHOT);
+    set({
+      ...EMPTY_SNAPSHOT,
+      promptGenerationWorkflow: null,
+    });
   },
 }));

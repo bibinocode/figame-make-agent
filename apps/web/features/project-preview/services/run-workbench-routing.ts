@@ -98,8 +98,9 @@ export function buildRoutingNode(
 ): WorkbenchRoutingNode {
   const accepted = snapshot.routingDecision?.accepted ?? null;
   const sourceSummary =
-    snapshot.normalizedEnvelope?.sources.map((source) => source.kind).join("、") ??
-    "无输入";
+    snapshot.normalizedEnvelope?.sources
+      .map((source) => source.kind)
+      .join("、") ?? "无输入";
 
   if (!accepted || !snapshot.activeFlowId) {
     return {
@@ -108,7 +109,12 @@ export function buildRoutingNode(
       summary: "本轮没有命中可执行路由，请补充更明确的需求或有效链接。",
       status: "error",
       steps: [
-        createStep("normalize", "输入解析", `识别到的输入源：${sourceSummary}`, "done"),
+        createStep(
+          "normalize",
+          "输入解析",
+          `识别到的输入源：${sourceSummary}`,
+          "done",
+        ),
         createStep(
           "intent",
           "意图识别",
@@ -116,7 +122,12 @@ export function buildRoutingNode(
           snapshot.intentCandidates.length > 0 ? "done" : "error",
         ),
         createStep("route", "路由决策", "当前没有命中可执行流。", "error"),
-        createStep("bridge", "模型桥接", "由于路由失败，未发起模型调用。", "error"),
+        createStep(
+          "bridge",
+          "模型桥接",
+          "由于路由失败，未发起模型调用。",
+          "error",
+        ),
       ],
     };
   }
@@ -127,7 +138,12 @@ export function buildRoutingNode(
     summary: `已识别 ${sourceSummary}，主意图为 ${getIntentLabel(accepted.intent)}。`,
     status: "active",
     steps: [
-      createStep("normalize", "输入解析", `识别到的输入源：${sourceSummary}`, "done"),
+      createStep(
+        "normalize",
+        "输入解析",
+        `识别到的输入源：${sourceSummary}`,
+        "done",
+      ),
       createStep(
         "intent",
         "意图识别",

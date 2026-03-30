@@ -28,7 +28,7 @@ export function ChatComposer({
     editorProps: {
       attributes: {
         class:
-          "min-h-[120px] px-4 py-4 text-sm leading-7 text-slate-900 outline-none",
+          "max-h-[220px] min-h-[96px] overflow-y-auto px-4 py-4 text-sm leading-7 text-slate-900 outline-none",
       },
       handleKeyDown: (_, event) => {
         if (event.key === "Enter" && !event.shiftKey) {
@@ -86,7 +86,7 @@ export function ChatComposer({
   const canSubmit = !disabled && Boolean(editor?.getText().trim());
 
   return (
-    <div className="rounded-[24px] border border-slate-200 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.08)]">
+    <div className="border border-slate-200 bg-white shadow-sm">
       <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
         <div>
           <p className="text-[11px] font-semibold tracking-[0.2em] text-slate-400">
@@ -97,7 +97,7 @@ export function ChatComposer({
           </p>
         </div>
         <button
-          className="h-10 rounded-full bg-slate-950 px-4 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+          className="h-10 bg-slate-950 px-4 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
           disabled={!canSubmit}
           onClick={() => {
             if (!editor) {

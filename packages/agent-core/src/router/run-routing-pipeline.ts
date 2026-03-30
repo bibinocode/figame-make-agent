@@ -1,9 +1,14 @@
 import { runFigmaLinkAdapter } from "./adapters/figma-link-adapter";
+import { runModifyAdapter } from "./adapters/modify-adapter";
 import { runPromptAdapter } from "./adapters/prompt-adapter";
 import { rankIntentCandidates } from "./critic/rank-intents";
 import type { AgentInputEnvelope, RoutingAdapter, RoutingDecision } from "./types";
 
-const DEFAULT_ADAPTERS: RoutingAdapter[] = [runPromptAdapter, runFigmaLinkAdapter];
+const DEFAULT_ADAPTERS: RoutingAdapter[] = [
+  runFigmaLinkAdapter,
+  runModifyAdapter,
+  runPromptAdapter,
+];
 
 export function runRoutingPipeline(
   envelope: AgentInputEnvelope,

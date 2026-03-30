@@ -13,10 +13,10 @@ export function ProjectPreviewWorkbench({
   templateLabel,
 }: ProjectPreviewWorkbenchProps) {
   return (
-    <div className="min-h-screen bg-[#f4f1e8] text-slate-950">
-      <WorkbenchTopbar projectTitle="Figame Agent Workspace" />
+    <div className="h-screen overflow-hidden bg-[#f4f1e8] text-slate-950">
+      <WorkbenchTopbar projectTitle="Figame Agent 工作台" />
 
-      <main className="flex min-h-[calc(100vh-56px)]">
+      <main className="flex h-[calc(100vh-56px)] overflow-hidden">
         <ProjectPreviewWorkspace
           template={template}
           templateLabel={templateLabel}

@@ -11,7 +11,7 @@ export function WorkbenchTopbar({ projectTitle }: WorkbenchTopbarProps) {
         </div>
         <div className="min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-500">
-            Workspace
+            工作台
           </p>
           <div className="flex items-center gap-2 text-sm">
             <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" />

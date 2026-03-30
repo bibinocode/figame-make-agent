@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { buildInputEnvelope } from "../services/build-input-envelope";
+import { createStreamTextQueue } from "../services/create-stream-text-queue";
 import {
   buildRoutingFailureReply,
   buildRoutingNode,
@@ -9,6 +10,7 @@ import {
   createRouteContext,
   runWorkbenchRouting,
 } from "../services/run-workbench-routing";
+import { runPromptGenerationWorkflow } from "../services/run-prompt-generation-workflow";
 import { streamWorkbenchAgentReply } from "../services/stream-workbench-agent-reply";
 import type {
   WorkbenchChatHistoryItem,
@@ -17,6 +19,7 @@ import type {
 import { useWorkbenchRoutingStore } from "../state/use-workbench-routing-store";
 import { ChatComposer } from "./chat-composer";
 import { RoutingAnalysisNode } from "./routing-debug-panel";
+import { WorkflowStepNode } from "./workflow-step-node";
 
 type ChatSidebarPlaceholderProps = {
   activeFilePath?: string;
@@ -53,37 +56,32 @@ function formatAssistantHtml(text: string) {
 
   return text
     .split(/\n{2,}/)
-    .map((paragraph) => `<p>${escapeHtml(paragraph).replaceAll("\n", "<br />")}</p>`)
+    .map(
+      (paragraph) =>
+        `<p>${escapeHtml(paragraph).replaceAll("\n", "<br />")}</p>`,
+    )
     .join("");
 }
 
-function getStatusLabel(status: string) {
-  switch (status) {
-    case "analyzing":
-      return "分析中";
-    case "routed":
-      return "路由完成";
-    case "running":
-      return "回复中";
-    case "error":
-      return "需要补充信息";
-    default:
-      return "待命中";
-  }
+function isNearBottom(element: HTMLDivElement, threshold = 72) {
+  const distanceToBottom =
+    element.scrollHeight - element.scrollTop - element.clientHeight;
+
+  return distanceToBottom <= threshold;
 }
 
 function getMessageChrome(message: WorkbenchChatMessage) {
-  if (message.kind === "routing") {
+  if (message.kind === "routing" || message.kind === "workflow") {
     return "";
   }
 
   switch (message.role) {
     case "user":
-      return "ml-auto max-w-[88%] rounded-[22px] rounded-br-md bg-slate-950 text-white";
+      return "ml-auto max-w-[88%] border border-slate-900 bg-slate-950 text-white";
     case "assistant":
-      return "mr-auto max-w-[92%] rounded-[22px] rounded-bl-md border border-slate-200 bg-white text-slate-800";
+      return "mr-auto max-w-[92%] border border-slate-200 bg-white text-slate-800";
     default:
-      return "mx-auto max-w-[94%] rounded-2xl border border-amber-200 bg-amber-50 text-amber-900";
+      return "mx-auto max-w-[94%] border border-amber-200 bg-amber-50 text-amber-900";
   }
 }
 
@@ -138,8 +136,12 @@ export function ChatSidebarPlaceholder({
   const applyRoutingSnapshot = useWorkbenchRoutingStore(
     (state) => state.applyRoutingSnapshot,
   );
+  const setPromptGenerationWorkflow = useWorkbenchRoutingStore(
+    (state) => state.setPromptGenerationWorkflow,
+  );
 
   const messageViewportRef = useRef<HTMLDivElement | null>(null);
+  const shouldAutoScrollRef = useRef(true);
 
   const canInteract = useMemo(
     () => executionStatus !== "analyzing" && executionStatus !== "running",
@@ -149,14 +151,11 @@ export function ChatSidebarPlaceholder({
   useEffect(() => {
     const viewport = messageViewportRef.current;
 
-    if (!viewport) {
+    if (!viewport || !shouldAutoScrollRef.current) {
       return;
     }
 
-    viewport.scrollTo({
-      top: viewport.scrollHeight,
-      behavior: "smooth",
-    });
+    viewport.scrollTop = viewport.scrollHeight;
   }, [messages]);
 
   const handleSubmit = async ({
@@ -176,7 +175,10 @@ export function ChatSidebarPlaceholder({
     const userMessageId = createMessageId("user");
     const routingMessageId = createMessageId("routing");
     const assistantMessageId = createMessageId("assistant");
+    const workflowMessageId = createMessageId("workflow");
     const history = buildModelHistory(messages);
+
+    shouldAutoScrollRef.current = true;
 
     appendMessage({
       id: userMessageId,
@@ -225,22 +227,121 @@ export function ChatSidebarPlaceholder({
       routingNode: buildRoutingNode(snapshot),
     });
 
-    if (!snapshot.routingDecision?.accepted || !snapshot.activeFlowId) {
-      const failureReply = buildRoutingFailureReply(snapshot);
+    const hasPromptSource = envelope.sources.some((source) => source.kind === "prompt");
+    let routingNodeVisible = true;
 
-      updateMessage(assistantMessageId, {
-        html: failureReply.html,
-        text: failureReply.text,
-        status: "error",
-      });
-      removeMessage(routingMessageId);
-      setExecutionStatus("error");
+    if (
+      snapshot.routingDecision?.accepted?.intent === "create_from_prompt" &&
+      snapshot.activeFlowId
+    ) {
+      try {
+        removeMessage(assistantMessageId);
+
+        if (routingNodeVisible) {
+          removeMessage(routingMessageId);
+          routingNodeVisible = false;
+        }
+
+        appendMessage({
+          id: workflowMessageId,
+          role: "system",
+          kind: "workflow",
+          html: "",
+          text: "Prompt 生成流程执行中。",
+          createdAt,
+          status: "streaming",
+          workflowNode: {
+            workflowId: workflowMessageId,
+            collapsed: false,
+            canCollapse: false,
+            summaryTitle: null,
+            summaryDetail: null,
+          },
+        });
+
+        setExecutionStatus("running");
+
+        const result = await runPromptGenerationWorkflow({
+          activeFilePath,
+          messageText: trimmedText,
+          routeContext: createRouteContext(snapshot, activeFilePath),
+          setPromptGenerationWorkflow,
+          workflowMessageId,
+          updateMessage,
+        });
+
+        appendMessage({
+          id: createMessageId("assistant"),
+          role: "assistant",
+          kind: "text",
+          html: `<p>${result.finalMessage}</p>`,
+          text: result.finalMessage,
+          createdAt: new Date().toISOString(),
+          status: "done",
+        });
+
+        updateMessage(workflowMessageId, {
+          status: "done",
+          workflowNode: {
+            workflowId: workflowMessageId,
+            collapsed: true,
+            canCollapse: true,
+            summaryTitle: result.workflow.summary.appName ?? "应用生成流程",
+            summaryDetail: `已完成 ${result.workflow.summary.completedStepCount}/${result.workflow.summary.totalStepCount} 步，生成 ${result.workflow.summary.totalFiles} 个文件`,
+          },
+        });
+
+        setExecutionStatus("idle");
+      } catch (error) {
+        updateMessage(workflowMessageId, {
+          status: "error",
+          workflowNode: {
+            workflowId: workflowMessageId,
+            collapsed: false,
+            canCollapse: false,
+            summaryTitle: "应用生成流程失败",
+            summaryDetail:
+              error instanceof Error ? error.message : "流程执行失败，请稍后重试",
+          },
+        });
+        setExecutionStatus("error");
+      }
+
       return;
+    }
+
+    if (!snapshot.routingDecision?.accepted || !snapshot.activeFlowId) {
+      if (!hasPromptSource) {
+        const failureReply = buildRoutingFailureReply(snapshot);
+
+        updateMessage(assistantMessageId, {
+          html: failureReply.html,
+          text: failureReply.text,
+          status: "error",
+        });
+        removeMessage(routingMessageId);
+        setExecutionStatus("error");
+        return;
+      }
+
+      if (routingNodeVisible) {
+        removeMessage(routingMessageId);
+        routingNodeVisible = false;
+      }
     }
 
     setExecutionStatus("running");
 
-    let routingNodeVisible = true;
+    let latestText = "";
+    const streamTextQueue = createStreamTextQueue({
+      onUpdate: (value) => {
+        updateMessage(assistantMessageId, {
+          html: formatAssistantHtml(value),
+          text: value,
+          status: "streaming",
+        });
+      },
+    });
 
     try {
       const streamedText = await streamWorkbenchAgentReply(
@@ -252,31 +353,34 @@ export function ChatSidebarPlaceholder({
         },
         {
           onChunk: (value) => {
+            latestText = value;
+
             if (routingNodeVisible) {
               removeMessage(routingMessageId);
               routingNodeVisible = false;
             }
 
-            updateMessage(assistantMessageId, {
-              html: formatAssistantHtml(value),
-              text: value,
-              status: "streaming",
-            });
+            streamTextQueue.setTarget(value);
           },
         },
       );
+
+      latestText = streamedText || "模型没有返回内容。";
 
       if (routingNodeVisible) {
         removeMessage(routingMessageId);
       }
 
+      streamTextQueue.flush(latestText);
       updateMessage(assistantMessageId, {
-        html: streamedText ? formatAssistantHtml(streamedText) : "<p>模型没有返回内容。</p>",
-        text: streamedText || "模型没有返回内容。",
+        html: formatAssistantHtml(latestText),
+        text: latestText,
         status: "done",
       });
       setExecutionStatus("idle");
     } catch (error) {
+      streamTextQueue.stop();
+
       const message =
         error instanceof Error ? error.message : "模型桥接失败，请检查本地服务。";
 
@@ -294,28 +398,12 @@ export function ChatSidebarPlaceholder({
   };
 
   return (
-    <aside className="hidden w-[420px] shrink-0 border-l border-slate-200 bg-[radial-gradient(circle_at_top,#fff8e7,transparent_36%),linear-gradient(180deg,#fcfaf3_0%,#f8f4ea_100%)] xl:flex xl:flex-col">
-      <header className="border-b border-slate-200/80 px-5 py-5">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-500">
-              AI 工作台
-            </p>
-            <h2 className="mt-2 text-lg font-semibold text-slate-950">
-              创作对话区
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              直接说需求、贴 Figma 链接，系统会先分析路由，再把请求桥接到本地模型。
-            </p>
-          </div>
-          <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600 shadow-sm">
-            {getStatusLabel(executionStatus)}
-          </div>
-        </div>
-      </header>
-
+    <aside className="hidden h-full min-h-0 w-[420px] shrink-0 overflow-hidden border-l border-slate-200 bg-[#f6f4ee] xl:flex xl:flex-col">
       <div
-        className="flex-1 space-y-4 overflow-auto px-5 py-5"
+        className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 py-4"
+        onScroll={(event) => {
+          shouldAutoScrollRef.current = isNearBottom(event.currentTarget);
+        }}
         ref={messageViewportRef}
       >
         {messages.map((message) => {
@@ -323,6 +411,10 @@ export function ChatSidebarPlaceholder({
             return (
               <RoutingAnalysisNode key={message.id} node={message.routingNode} />
             );
+          }
+
+          if (message.kind === "workflow" && message.workflowNode) {
+            return <WorkflowStepNode key={message.id} message={message} />;
           }
 
           return (
@@ -340,17 +432,25 @@ export function ChatSidebarPlaceholder({
                     {formatMessageTime(message.createdAt)}
                   </span>
                 </div>
-                <div
-                  className="mt-2 text-sm leading-7"
-                  dangerouslySetInnerHTML={{ __html: message.html }}
-                />
+                {message.status === "streaming" && !message.html ? (
+                  <div className="mt-3 flex items-center gap-2 text-slate-400">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-slate-400 [animation-delay:-0.3s]" />
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-slate-400 [animation-delay:-0.15s]" />
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-slate-400" />
+                  </div>
+                ) : (
+                  <div
+                    className="mt-2 text-sm leading-7"
+                    dangerouslySetInnerHTML={{ __html: message.html }}
+                  />
+                )}
               </div>
             </article>
           );
         })}
       </div>
 
-      <div className="border-t border-slate-200/80 px-5 py-4">
+      <div className="shrink-0 border-t border-slate-200 bg-[#f6f4ee] px-4 py-4">
         <ChatComposer
           disabled={!canInteract}
           onChange={setComposerHtml}

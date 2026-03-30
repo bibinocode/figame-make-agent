@@ -2,6 +2,7 @@ import type {
   AdapterResult,
   AgentInputEnvelope,
   IntentCandidate,
+  PromptGenerationWorkflowState,
   ProviderId,
   ProviderProfileId,
   RoutingDecision,
@@ -18,7 +19,7 @@ export type AttachmentItem = {
 
 export type WorkbenchMessageRole = "user" | "assistant" | "system";
 
-export type WorkbenchMessageKind = "text" | "routing";
+export type WorkbenchMessageKind = "text" | "routing" | "workflow";
 
 export type WorkbenchMessageStatus = "done" | "streaming" | "error";
 
@@ -39,6 +40,14 @@ export type WorkbenchRoutingNode = {
   steps: WorkbenchRoutingStep[];
 };
 
+export type WorkbenchWorkflowNode = {
+  workflowId: string;
+  collapsed?: boolean;
+  canCollapse?: boolean;
+  summaryTitle?: string | null;
+  summaryDetail?: string | null;
+};
+
 export type WorkbenchChatMessage = {
   id: string;
   role: WorkbenchMessageRole;
@@ -48,6 +57,7 @@ export type WorkbenchChatMessage = {
   createdAt: string;
   status: WorkbenchMessageStatus;
   routingNode?: WorkbenchRoutingNode;
+  workflowNode?: WorkbenchWorkflowNode;
 };
 
 export type WorkbenchExecutionStatus =
@@ -85,6 +95,7 @@ export type WorkbenchRoutingState = WorkbenchRoutingSnapshot & {
   composerHtml: string;
   messages: WorkbenchChatMessage[];
   attachments: AttachmentItem[];
+  promptGenerationWorkflow: PromptGenerationWorkflowState | null;
   setComposerHtml: (value: string) => void;
   clearComposer: () => void;
   appendMessage: (value: WorkbenchChatMessage) => void;
@@ -97,6 +108,9 @@ export type WorkbenchRoutingState = WorkbenchRoutingSnapshot & {
   removeMessage: (id: string) => void;
   setAttachments: (value: AttachmentItem[]) => void;
   applyRoutingSnapshot: (value: WorkbenchRoutingSnapshot) => void;
+  setPromptGenerationWorkflow: (
+    value: PromptGenerationWorkflowState | null,
+  ) => void;
   setExecutionStatus: (value: WorkbenchExecutionStatus) => void;
   resetRouting: () => void;
 };

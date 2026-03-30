@@ -1,6 +1,9 @@
 "use client";
 
-import type { WorkbenchRoutingNode, WorkbenchRoutingStep } from "../state/workbench-routing-types";
+import type {
+  WorkbenchRoutingNode,
+  WorkbenchRoutingStep,
+} from "../state/workbench-routing-types";
 
 type RoutingAnalysisNodeProps = {
   node: WorkbenchRoutingNode;
@@ -32,10 +35,10 @@ function getStepTextClass(status: WorkbenchRoutingStep["status"]) {
 
 export function RoutingAnalysisNode({ node }: RoutingAnalysisNodeProps) {
   return (
-    <section className="mr-auto max-w-[94%] rounded-[26px] border border-slate-200 bg-white/95 px-4 py-4 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+    <section className="mr-auto max-w-[94%] border border-slate-200 bg-white px-4 py-4 shadow-sm">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-medium text-slate-400">标准流程</p>
+          <p className="text-xs font-medium text-slate-400">路由分析节点</p>
           <h3 className="mt-2 text-base font-semibold text-slate-950">
             {node.title}
           </h3>
@@ -56,10 +59,17 @@ export function RoutingAnalysisNode({ node }: RoutingAnalysisNodeProps) {
                 getStepDotClass(step.status),
               ].join(" ")}
             />
-            <p className={["text-sm font-medium", getStepTextClass(step.status)].join(" ")}>
+            <p
+              className={[
+                "text-sm font-medium",
+                getStepTextClass(step.status),
+              ].join(" ")}
+            >
               {step.title}
             </p>
-            <p className="mt-1 text-sm leading-6 text-slate-500">{step.detail}</p>
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              {step.detail}
+            </p>
           </div>
         ))}
       </div>

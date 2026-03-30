@@ -130,7 +130,14 @@ importers:
         specifier: ^4.1.2
         version: 4.1.2(@types/node@20.19.37)(jsdom@26.1.0)(vite@8.0.3(@types/node@20.19.37)(jiti@2.6.1)(yaml@2.8.3))
 
-  packages/agent-core: {}
+  packages/agent-core:
+    dependencies:
+      '@langchain/langgraph':
+        specifier: ^1.2.6
+        version: 1.2.6(@langchain/core@1.1.36(openai@6.33.0(ws@8.20.0)(zod@4.3.6))(ws@8.20.0))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(zod-to-json-schema@3.25.1(zod@4.3.6))(zod@4.3.6)
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
 
   packages/agent-flows:
     dependencies:
