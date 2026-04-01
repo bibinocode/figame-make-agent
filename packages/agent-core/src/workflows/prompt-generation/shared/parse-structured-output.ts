@@ -30,12 +30,32 @@ function extractJsonLikePayload(value: string) {
   return normalized;
 }
 
+function tryParseStringifiedJson(value: unknown): unknown {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const trimmed = value.trim();
+
+  if (
+    !trimmed ||
+    !(
+      (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+      (trimmed.startsWith("[") && trimmed.endsWith("]"))
+    )
+  ) {
+    return value;
+  }
+
+  return JSON.parse(trimmed);
+}
+
 export function parseStructuredOutput<TSchema extends z.ZodTypeAny>(
   rawText: string,
   schema: TSchema,
 ) {
   const candidate = extractJsonLikePayload(rawText);
-  const parsed = JSON.parse(candidate);
+  const parsed = tryParseStringifiedJson(JSON.parse(candidate));
   const validationResult = schema.safeParse(parsed);
 
   if (!validationResult.success) {

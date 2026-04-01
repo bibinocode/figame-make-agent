@@ -8,7 +8,7 @@ export const promptGenerationPagesNode = createPromptGenerationStepNode({
   title: "页面代码",
   goal: "规划页面文件及每个页面的核心展示内容。",
   dependsOn: ["components", "hooks"],
-  inputArtifactKeys: ["plan", "typesSpec", "hooksSpec", "componentsSpec"],
+  inputArtifactKeys: ["plan", "ui", "typesSpec", "hooksSpec", "componentsSpec"],
   outputArtifactKey: "pagesSpec",
   maxAttempts: 3,
   schema: PromptPagesArtifactSchema,

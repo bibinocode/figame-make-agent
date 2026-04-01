@@ -8,7 +8,7 @@ export const promptGenerationLayoutNode = createPromptGenerationStepNode({
   title: "布局组件",
   goal: "规划全局壳层、导航、侧栏和页面容器布局。",
   dependsOn: ["pages"],
-  inputArtifactKeys: ["plan", "pagesSpec", "componentsSpec"],
+  inputArtifactKeys: ["plan", "ui", "pagesSpec", "componentsSpec"],
   outputArtifactKey: "layoutSpec",
   maxAttempts: 3,
   schema: PromptLayoutArtifactSchema,

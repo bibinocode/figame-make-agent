@@ -8,7 +8,7 @@ export const promptGenerationTypesNode = createPromptGenerationStepNode({
   title: "类型生成",
   goal: "定义业务数据类型、视图模型和核心接口。",
   dependsOn: ["plan"],
-  inputArtifactKeys: ["plan"],
+  inputArtifactKeys: ["plan", "capabilities", "componentContracts", "structure"],
   outputArtifactKey: "typesSpec",
   maxAttempts: 3,
   schema: PromptTypesArtifactSchema,

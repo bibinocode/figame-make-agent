@@ -13,13 +13,25 @@ import { promptGenerationTypesNode } from "../foundation/types/node";
 import { promptGenerationUtilsNode } from "../foundation/utils/node";
 import { promptGenerationDomainLogicNode } from "../logic/domain-logic/node";
 import { promptGenerationHooksNode } from "../logic/hooks/node";
+import { promptGenerationAnalysisNode } from "../planning/analysis/node";
+import { promptGenerationCapabilitiesNode } from "../planning/capabilities/node";
+import { promptGenerationComponentDesignNode } from "../planning/component-design/node";
+import { promptGenerationIntentNode } from "../planning/intent/node";
 import { promptGenerationPlanNode } from "../planning/plan/node";
+import { promptGenerationStructurePlanNode } from "../planning/structure/node";
+import { promptGenerationUiDesignNode } from "../planning/ui/node";
 import { promptGenerationComponentsNode } from "../views/components/node";
 import { promptGenerationLayoutNode } from "../views/layout/node";
 import { promptGenerationPagesNode } from "../views/pages/node";
 import { promptGenerationStylesNode } from "../views/styles/node";
 
 export const PROMPT_GENERATION_STEP_NODES = [
+  promptGenerationAnalysisNode,
+  promptGenerationIntentNode,
+  promptGenerationCapabilitiesNode,
+  promptGenerationUiDesignNode,
+  promptGenerationComponentDesignNode,
+  promptGenerationStructurePlanNode,
   promptGenerationPlanNode,
   promptGenerationTypesNode,
   promptGenerationUtilsNode,

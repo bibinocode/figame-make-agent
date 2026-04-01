@@ -8,7 +8,7 @@ export const promptGenerationHooksNode = createPromptGenerationStepNode({
   title: "Hooks 层",
   goal: "规划页面和组件需要的 hooks，以及状态读取方式。",
   dependsOn: ["domainLogic"],
-  inputArtifactKeys: ["plan", "typesSpec", "domainLogicSpec"],
+  inputArtifactKeys: ["plan", "ui", "capabilities", "typesSpec", "domainLogicSpec"],
   outputArtifactKey: "hooksSpec",
   maxAttempts: 3,
   schema: PromptHooksArtifactSchema,

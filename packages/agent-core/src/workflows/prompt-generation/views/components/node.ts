@@ -12,7 +12,7 @@ export const promptGenerationComponentsNode =
     title: "组件代码",
     goal: "拆出复用组件和局部组件，明确职责。",
     dependsOn: ["hooks"],
-    inputArtifactKeys: ["plan", "typesSpec", "hooksSpec"],
+    inputArtifactKeys: ["plan", "ui", "componentContracts", "typesSpec", "hooksSpec"],
     outputArtifactKey: "componentsSpec",
     maxAttempts: 3,
     schema: PromptComponentsArtifactSchema,

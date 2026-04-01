@@ -9,6 +9,12 @@ export const PromptGenerationPhaseIdSchema = z.enum([
 ]);
 
 export const PromptGenerationStepIdSchema = z.enum([
+  "analysis",
+  "intent",
+  "capabilities",
+  "uiDesign",
+  "componentDesign",
+  "structurePlan",
   "plan",
   "types",
   "utils",
@@ -24,6 +30,12 @@ export const PromptGenerationStepIdSchema = z.enum([
 ]);
 
 export const PromptGenerationArtifactKeySchema = z.enum([
+  "analysis",
+  "intent",
+  "capabilities",
+  "ui",
+  "componentContracts",
+  "structure",
   "plan",
   "typesSpec",
   "utilsSpec",
@@ -110,6 +122,7 @@ export const PromptGenerationWorkflowMetaSchema = z.object({
   status: PromptGenerationWorkflowStatusSchema,
   currentPhaseId: PromptGenerationPhaseIdSchema.nullable(),
   currentStepId: PromptGenerationStepIdSchema.nullable(),
+  skipGeneration: z.boolean().default(false),
   userPrompt: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -117,7 +130,7 @@ export const PromptGenerationWorkflowMetaSchema = z.object({
 
 export const PromptGenerationSummarySchema = z.object({
   completedStepCount: z.number().int().nonnegative().default(0),
-  totalStepCount: z.number().int().positive().default(12),
+  totalStepCount: z.number().int().positive().default(18),
   totalFiles: z.number().int().nonnegative().default(0),
   entryFiles: z.array(z.string()).default([]),
   appName: z.string().nullable().default(null),
