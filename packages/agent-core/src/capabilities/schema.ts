@@ -1,9 +1,31 @@
 import { z } from "zod";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
 function toStringArray(value: unknown) {
   if (Array.isArray(value)) {
     return value
-      .map((item) => (typeof item === "string" ? item.trim() : ""))
+      .flatMap((item) => {
+        if (typeof item === "string") {
+          const trimmed = item.trim();
+          return trimmed ? [trimmed] : [];
+        }
+
+        if (isRecord(item)) {
+          const candidate = firstNonEmptyString(
+            item.id,
+            item.name,
+            item.title,
+            item.label,
+            item.key,
+          );
+          return candidate ? [candidate] : [];
+        }
+
+        return [];
+      })
       .filter(Boolean);
   }
 
@@ -15,169 +37,380 @@ function toStringArray(value: unknown) {
   return [];
 }
 
-function normalizeField(value: unknown) {
-  if (typeof value !== "object" || value === null) {
+function toObjectArray(value: unknown, aliasValue?: unknown) {
+  if (Array.isArray(value)) {
     return value;
   }
 
-  const candidate = { ...(value as Record<string, unknown>) };
-
-  if (
-    (typeof candidate.name !== "string" || !candidate.name.trim()) &&
-    typeof candidate.id === "string"
-  ) {
-    candidate.name = candidate.id;
+  if (Array.isArray(aliasValue)) {
+    return aliasValue;
   }
 
-  if (typeof candidate.required !== "boolean") {
-    candidate.required = true;
+  if (isRecord(value)) {
+    return [value];
   }
 
-  if (
-    (typeof candidate.summary !== "string" || !candidate.summary.trim()) &&
-    typeof candidate.description === "string"
-  ) {
-    candidate.summary = candidate.description;
+  if (isRecord(aliasValue)) {
+    return [aliasValue];
   }
 
-  if (
-    typeof candidate.summary !== "string" ||
-    !candidate.summary.trim()
-  ) {
-    candidate.summary = `${candidate.name ?? "字段"}说明`;
+  return [];
+}
+
+function firstNonEmptyString(...values: unknown[]) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
   }
 
-  if (typeof candidate.type !== "string" || !candidate.type.trim()) {
-    candidate.type = "string";
+  return null;
+}
+
+function buildStableId(value: unknown, fallback: string) {
+  const source = firstNonEmptyString(value, fallback) ?? fallback;
+  return source
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/[\\/]/g, "-");
+}
+
+function normalizeField(value: unknown) {
+  if (typeof value === "string") {
+    const name = value.trim() || "field";
+    return {
+      name,
+      type: "string",
+      required: true,
+      summary: `${name} summary`,
+    };
   }
+
+  if (!isRecord(value)) {
+    return value;
+  }
+
+  const candidate = { ...value };
+  const name =
+    firstNonEmptyString(
+      candidate.name,
+      candidate.id,
+      candidate.key,
+      candidate.label,
+      candidate.title,
+    ) ?? "field";
+
+  candidate.name = name;
+  candidate.required =
+    typeof candidate.required === "boolean" ? candidate.required : true;
+  candidate.summary =
+    firstNonEmptyString(
+      candidate.summary,
+      candidate.description,
+      candidate.purpose,
+      candidate.note,
+    ) ?? `${name} summary`;
+  candidate.type =
+    firstNonEmptyString(
+      candidate.type,
+      candidate.valueType,
+      candidate.dataType,
+      candidate.fieldType,
+    ) ?? "string";
 
   return candidate;
 }
 
 function normalizePage(value: unknown) {
-  if (typeof value !== "object" || value === null) {
+  if (typeof value === "string") {
+    const title = value.trim() || "Page";
+    return {
+      id: buildStableId(title, "page"),
+      title,
+      purpose: `${title} page purpose`,
+      coreBehaviors: [],
+      relatedDataModels: [],
+    };
+  }
+
+  if (!isRecord(value)) {
     return value;
   }
 
-  const candidate = { ...(value as Record<string, unknown>) };
+  const candidate = { ...value };
+  const title =
+    firstNonEmptyString(
+      candidate.title,
+      candidate.name,
+      candidate.pageTitle,
+      candidate.label,
+    ) ?? "Page";
 
-  if (
-    (typeof candidate.title !== "string" || !candidate.title.trim()) &&
-    typeof candidate.name === "string"
-  ) {
-    candidate.title = candidate.name;
-  }
-
-  if (
-    (typeof candidate.purpose !== "string" || !candidate.purpose.trim()) &&
-    typeof candidate.description === "string"
-  ) {
-    candidate.purpose = candidate.description;
-  }
-
-  candidate.coreBehaviors = toStringArray(candidate.coreBehaviors);
-  candidate.relatedDataModels = toStringArray(candidate.relatedDataModels);
+  candidate.title = title;
+  candidate.id =
+    firstNonEmptyString(
+      candidate.id,
+      candidate.pageId,
+      candidate.routeId,
+      candidate.key,
+    ) ?? buildStableId(title, "page");
+  candidate.purpose =
+    firstNonEmptyString(
+      candidate.purpose,
+      candidate.description,
+      candidate.summary,
+      candidate.goal,
+      candidate.overview,
+    ) ?? `${title} page purpose`;
+  candidate.coreBehaviors = toStringArray(
+    candidate.coreBehaviors ??
+      candidate.behaviors ??
+      candidate.behaviorIds ??
+      candidate.primaryBehaviors ??
+      candidate.coreActions,
+  );
+  candidate.relatedDataModels = toStringArray(
+    candidate.relatedDataModels ??
+      candidate.dataModels ??
+      candidate.modelIds ??
+      candidate.relatedModels ??
+      candidate.entities,
+  );
 
   return candidate;
 }
 
 function normalizeBehavior(value: unknown) {
-  if (typeof value !== "object" || value === null) {
+  if (typeof value === "string") {
+    const name = value.trim() || "Behavior";
+    return {
+      id: buildStableId(name, "behavior"),
+      name,
+      summary: `${name} summary`,
+      trigger: "When the user interacts with the related page",
+      pages: [],
+      dataModels: [],
+    };
+  }
+
+  if (!isRecord(value)) {
     return value;
   }
 
-  const candidate = { ...(value as Record<string, unknown>) };
+  const candidate = { ...value };
+  const name =
+    firstNonEmptyString(
+      candidate.name,
+      candidate.title,
+      candidate.id,
+      candidate.action,
+      candidate.label,
+    ) ?? "Behavior";
 
-  if (
-    (typeof candidate.name !== "string" || !candidate.name.trim()) &&
-    typeof candidate.id === "string"
-  ) {
-    candidate.name = candidate.id;
-  }
-
-  if (
-    (typeof candidate.summary !== "string" || !candidate.summary.trim()) &&
-    typeof candidate.description === "string"
-  ) {
-    candidate.summary = candidate.description;
-  }
-
-  if (
-    typeof candidate.summary !== "string" ||
-    !candidate.summary.trim()
-  ) {
-    candidate.summary = `${candidate.name ?? "行为"}说明`;
-  }
-
-  if (
-    typeof candidate.trigger !== "string" ||
-    !candidate.trigger.trim()
-  ) {
-    candidate.trigger = "用户进入相关页面后触发";
-  }
-
-  candidate.pages = toStringArray(candidate.pages);
-  candidate.dataModels = toStringArray(candidate.dataModels);
+  candidate.name = name;
+  candidate.id =
+    firstNonEmptyString(
+      candidate.id,
+      candidate.behaviorId,
+      candidate.actionId,
+      candidate.key,
+    ) ?? buildStableId(name, "behavior");
+  candidate.summary =
+    firstNonEmptyString(
+      candidate.summary,
+      candidate.description,
+      candidate.purpose,
+      candidate.goal,
+    ) ?? `${name} summary`;
+  candidate.trigger =
+    firstNonEmptyString(
+      candidate.trigger,
+      candidate.when,
+      candidate.activation,
+      candidate.userTrigger,
+    ) ?? "When the user interacts with the related page";
+  candidate.pages = toStringArray(
+    candidate.pages ??
+      candidate.pageIds ??
+      candidate.relatedPages ??
+      candidate.usedInPages,
+  );
+  candidate.dataModels = toStringArray(
+    candidate.dataModels ??
+      candidate.relatedDataModels ??
+      candidate.modelIds ??
+      candidate.entities ??
+      candidate.models,
+  );
 
   return candidate;
 }
 
 function normalizeDataModel(value: unknown) {
-  if (typeof value !== "object" || value === null) {
+  if (typeof value === "string") {
+    const name = value.trim() || "DataModel";
+    return {
+      id: buildStableId(name, "model"),
+      name,
+      summary: `${name} summary`,
+      fields: [normalizeField("id")],
+      usedByPages: [],
+      usedByBehaviors: [],
+    };
+  }
+
+  if (!isRecord(value)) {
     return value;
   }
 
-  const candidate = { ...(value as Record<string, unknown>) };
+  const candidate = { ...value };
+  const name =
+    firstNonEmptyString(
+      candidate.name,
+      candidate.title,
+      candidate.id,
+      candidate.entity,
+      candidate.model,
+      candidate.label,
+    ) ?? "DataModel";
 
-  if (
-    (typeof candidate.name !== "string" || !candidate.name.trim()) &&
-    typeof candidate.id === "string"
-  ) {
-    candidate.name = candidate.id;
-  }
+  candidate.name = name;
+  candidate.id =
+    firstNonEmptyString(
+      candidate.id,
+      candidate.dataModelId,
+      candidate.modelId,
+      candidate.entityId,
+      candidate.key,
+    ) ?? buildStableId(name, "model");
+  candidate.summary =
+    firstNonEmptyString(
+      candidate.summary,
+      candidate.description,
+      candidate.purpose,
+      candidate.overview,
+    ) ?? `${name} summary`;
+  candidate.usedByPages = toStringArray(
+    candidate.usedByPages ?? candidate.pages ?? candidate.pageIds,
+  );
+  candidate.usedByBehaviors = toStringArray(
+    candidate.usedByBehaviors ??
+      candidate.behaviors ??
+      candidate.behaviorIds ??
+      candidate.actions,
+  );
 
-  if (
-    (typeof candidate.summary !== "string" || !candidate.summary.trim()) &&
-    typeof candidate.description === "string"
-  ) {
-    candidate.summary = candidate.description;
-  }
-
-  if (
-    typeof candidate.summary !== "string" ||
-    !candidate.summary.trim()
-  ) {
-    candidate.summary = `${candidate.name ?? "数据模型"}说明`;
-  }
-
-  candidate.usedByPages = toStringArray(candidate.usedByPages);
-  candidate.usedByBehaviors = toStringArray(candidate.usedByBehaviors);
-
-  if (Array.isArray(candidate.fields)) {
-    candidate.fields = candidate.fields.map(normalizeField);
-  }
+  const fields = toObjectArray(
+    candidate.fields,
+    candidate.properties ?? candidate.attributes ?? candidate.columns,
+  ).map(normalizeField);
+  candidate.fields = fields.length > 0 ? fields : [normalizeField("id")];
 
   return candidate;
 }
 
 function normalizeCapabilitiesObject(value: unknown) {
-  if (typeof value !== "object" || value === null) {
+  if (!isRecord(value)) {
     return value;
   }
 
-  const candidate = { ...(value as Record<string, unknown>) };
+  const candidate = { ...value };
+  const pages = toObjectArray(
+    candidate.pages,
+    candidate.pageBlueprints ?? candidate.pagePlans ?? candidate.screens,
+  ).map(normalizePage);
+  const behaviors = toObjectArray(
+    candidate.behaviors,
+    candidate.actions ?? candidate.flows ?? candidate.interactions,
+  ).map(normalizeBehavior);
+  const dataModels = toObjectArray(
+    candidate.dataModels,
+    candidate.models ?? candidate.entities ?? candidate.dataEntities,
+  ).map(normalizeDataModel);
+  candidate.pages = pages;
+  candidate.behaviors = behaviors;
+  candidate.dataModels = dataModels;
 
-  if (Array.isArray(candidate.pages)) {
-    candidate.pages = candidate.pages.map(normalizePage);
-  }
+  const pageIds = pages
+    .map((page) => (isRecord(page) ? firstNonEmptyString(page.id) : null))
+    .filter((item): item is string => Boolean(item));
+  const behaviorIds = behaviors
+    .map((behavior) =>
+      isRecord(behavior) ? firstNonEmptyString(behavior.id) : null,
+    )
+    .filter((item): item is string => Boolean(item));
+  const dataModelIds = dataModels
+    .map((model) => (isRecord(model) ? firstNonEmptyString(model.id) : null))
+    .filter((item): item is string => Boolean(item));
 
-  if (Array.isArray(candidate.behaviors)) {
-    candidate.behaviors = candidate.behaviors.map(normalizeBehavior);
-  }
+  candidate.pages = pages.map((page) => {
+    if (!isRecord(page)) {
+      return page;
+    }
 
-  if (Array.isArray(candidate.dataModels)) {
-    candidate.dataModels = candidate.dataModels.map(normalizeDataModel);
-  }
+    const record = { ...page };
+    const coreBehaviors = toStringArray(record.coreBehaviors);
+    const relatedDataModels = toStringArray(record.relatedDataModels);
+
+    record.coreBehaviors =
+      coreBehaviors.length > 0
+        ? coreBehaviors
+        : behaviorIds.slice(0, Math.max(1, Math.min(behaviorIds.length, 2)));
+    record.relatedDataModels =
+      relatedDataModels.length > 0
+        ? relatedDataModels
+        : dataModelIds.slice(0, Math.max(1, Math.min(dataModelIds.length, 2)));
+
+    return record;
+  });
+
+  candidate.behaviors = behaviors.map((behavior) => {
+    if (!isRecord(behavior)) {
+      return behavior;
+    }
+
+    const record = { ...behavior };
+    const pages = toStringArray(record.pages);
+    const dataModels = toStringArray(record.dataModels);
+
+    record.pages =
+      pages.length > 0
+        ? pages
+        : pageIds.slice(0, Math.max(1, Math.min(pageIds.length, 1)));
+    record.dataModels =
+      dataModels.length > 0
+        ? dataModels
+        : dataModelIds.slice(
+            0,
+            Math.max(1, Math.min(dataModelIds.length, 2)),
+          );
+
+    return record;
+  });
+
+  candidate.dataModels = dataModels.map((model) => {
+    if (!isRecord(model)) {
+      return model;
+    }
+
+    const record = { ...model };
+    const usedByPages = toStringArray(record.usedByPages);
+    const usedByBehaviors = toStringArray(record.usedByBehaviors);
+
+    record.usedByPages =
+      usedByPages.length > 0
+        ? usedByPages
+        : pageIds.slice(0, Math.max(1, Math.min(pageIds.length, 2)));
+    record.usedByBehaviors =
+      usedByBehaviors.length > 0
+        ? usedByBehaviors
+        : behaviorIds.slice(
+            0,
+            Math.max(1, Math.min(behaviorIds.length, 2)),
+          );
+
+    return record;
+  });
 
   return candidate;
 }

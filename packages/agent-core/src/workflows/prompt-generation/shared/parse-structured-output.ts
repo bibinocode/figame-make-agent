@@ -17,7 +17,9 @@ function extractJsonLikePayload(value: string) {
   const normalized = stripCodeFence(value);
   const objectStart = normalized.indexOf("{");
   const arrayStart = normalized.indexOf("[");
-  const startCandidates = [objectStart, arrayStart].filter((index) => index >= 0);
+  const startCandidates = [objectStart, arrayStart].filter(
+    (index) => index >= 0,
+  );
   const start = startCandidates.length > 0 ? Math.min(...startCandidates) : 0;
   const objectEnd = normalized.lastIndexOf("}");
   const arrayEnd = normalized.lastIndexOf("]");
@@ -59,7 +61,14 @@ export function parseStructuredOutput<TSchema extends z.ZodTypeAny>(
   const validationResult = schema.safeParse(parsed);
 
   if (!validationResult.success) {
-    throw new Error(validationResult.error.issues[0]?.message ?? "结构化输出校验失败。");
+    const firstIssue = validationResult.error.issues[0];
+    const path =
+      firstIssue && firstIssue.path.length > 0
+        ? firstIssue.path.join(".")
+        : "root";
+    const message =
+      firstIssue?.message ?? "Structured output validation failed";
+    throw new Error(`${message} at ${path}`);
   }
 
   return validationResult.data;
